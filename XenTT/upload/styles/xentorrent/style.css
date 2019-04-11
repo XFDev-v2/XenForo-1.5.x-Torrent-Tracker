@@ -1,0 +1,76 @@
+@font-face {
+	font-family: 'icomoon';
+	src:url('fonts/icomoon.eot?bi0ync');
+	src:url('fonts/icomoon.eot?#iefixbi0ync') format('embedded-opentype'),
+		url('fonts/icomoon.ttf?bi0ync') format('truetype'),
+		url('fonts/icomoon.woff?bi0ync') format('woff'),
+		url('fonts/icomoon.svg?bi0ync#icomoon') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+	font-family: 'icomoon';
+	speak: none;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+
+	/* Better Font Rendering =========== */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.icon-magnet:before {
+	content: "\f076";
+}
+.icon-laptop:before {
+	content: "\e600";
+}
+.icon-comment-discussion:before {
+	content: "\f04f";
+}
+.icon-dash:before {
+	content: "\f0ca";
+}
+.icon-plus:before {
+	content: "\f05d";
+}
+.icon-bullhorn:before {
+	content: "\e91a";
+}
+.icon-clock:before {
+	content: "\e94e";
+}
+.icon-drive:before {
+	content: "\e963";
+}
+.icon-database:before {
+	content: "\e964";
+}
+.icon-comments:before {
+	content: "\e96d";
+}
+.icon-hour-glass:before {
+	content: "\e979";
+}
+.icon-stats-bars:before {
+	content: "\e99c";
+}
+.icon-meter:before {
+	content: "\e9a6";
+}
+.icon-download:before {
+	content: "\e9c7";
+}
+.icon-upload:before {
+	content: "\e9c8";
+}
+.icon-arrow-up:before {
+	content: "\ea32";
+}
+.icon-arrow-down:before {
+	content: "\ea36";
+}

@@ -1,0 +1,2975 @@
+<?xml version="1.0" encoding="utf-8"?>
+<addon addon_id="xenTorrentTracker" title="XenTorrent Tracker" version_string="1.2.1" version_id="15" url="" install_callback_class="XenTorrentTracker_Install_Controller" install_callback_method="install" uninstall_callback_class="XenTorrentTracker_Install_Controller" uninstall_callback_method="uninstall">
+  <admin_navigation>
+    <navigation navigation_id="xenTTLog" parent_navigation_id="xenTorrentTracker" display_order="100" link="torrents/log" admin_permission_id="manageXenTracker" debug_only="0" hide_no_children="0"/>
+    <navigation navigation_id="xenTorrentClientBan" parent_navigation_id="xenTorrentTracker" display_order="30" link="torrents/client-ban" admin_permission_id="manageXenTracker" debug_only="0" hide_no_children="0"/>
+    <navigation navigation_id="xenTorrentIPBanManager" parent_navigation_id="xenTorrentTracker" display_order="20" link="torrents/ip-ban" admin_permission_id="manageXenTracker" debug_only="0" hide_no_children="0"/>
+    <navigation navigation_id="xenTorrentSettings" parent_navigation_id="xenTorrentTracker" display_order="1" link="options/list/xenTorrentTrackerOptions" admin_permission_id="option" debug_only="0" hide_no_children="0"/>
+    <navigation navigation_id="xenTorrentTracker" parent_navigation_id="applications" display_order="1000" link="" admin_permission_id="manageXenTracker" debug_only="0" hide_no_children="0"/>
+  </admin_navigation>
+  <admin_permissions>
+    <admin_permission admin_permission_id="manageXenTracker" display_order="1000"/>
+  </admin_permissions>
+  <admin_style_properties/>
+  <admin_templates>
+    <template title="option_template_xenTorrentTracker"><![CDATA[<xen:controlunit label="{$preparedOption.title}" hint="{xen:phrase example}: example.com:2710">
+	<xen:explain>{xen:raw $preparedOption.explain}</xen:explain>
+	<xen:html>
+		<xen:textbox name="{$fieldPrefix}[{$preparedOption.option_id}][host]" value="{$preparedOption.option_value.host}" placeholder="{xen:phrase host}" size="40" />
+		:
+		<xen:textbox name="{$fieldPrefix}[{$preparedOption.option_id}][port]" value="{$preparedOption.option_value.port}" placeholder="{xen:phrase port}" size="5" />
+		<span id="trackerStatus">
+			<a data-target="#trackerStatus" data-method="replaceAll" href="{xen:adminlink torrents/check-status}" class="Loader button">{xen:phrase check_status}</a>
+		</span>
+		
+		<input type="hidden" name="{$listedFieldName}" value="{$preparedOption.option_id}" />
+		{xen:raw $editLink}
+	</xen:html>
+</xen:controlunit>]]></template>
+    <template title="xentorrent_admin_forum_edit_panes"><![CDATA[<xen:if is="{$forum.is_torrent_category}">
+<li>
+	<xen:textboxunit placeholder="xxx.png" 
+		label="Category Image:" 
+		name="torrent_category_image" 
+		value="{$forum.torrent_category_image}" 
+	>
+		<xen:explain>Torrent categories image path: {$xenOptions.xenTorrentCategoriesImagePath}</xen:explain>
+	</xen:textboxunit>
+</li>
+</xen:if>]]></template>
+    <template title="xentorrent_admin_forum_edit_tabs"><![CDATA[<xen:if is="{$forum.is_torrent_category}">
+	<li><a>{xen:phrase bit_torrent}</a></li>
+</xen:if>]]></template>
+    <template title="xentorrent_admin_sidebar_tracker_stats"><![CDATA[<div class="section trackerStats">
+	<div class="secondaryContent">
+		<h3 class="textHeading">{xen:phrase bittorrent_tracker_stats}</h3>
+		<div class="statsBlock">
+			<a><span class="label">{xen:phrase seeders}:</span> <strong style="color:{xen:property seeders};">{xen:if {$xenTTStats.peers.seeding}, {$xenTTStats.peers.seeding}, 0}</strong></a>
+			<a><span class="label">{xen:phrase leechers}:</span> <strong style="color:{xen:property leechers};">{xen:if {$xenTTStats.peers.leeching}, {$xenTTStats.peers.leeching}, 0}</strong></a>
+			<a><span class="label">{xen:phrase peers}:</span> <strong style="color:{xen:property leechers};">{xen:calc '{$xenTTStats.peers.seeding} + {$xenTTStats.peers.leeching}'}</strong></a>
+			<a><span class="label">{xen:phrase snatches}:</span> <strong>{xen:if {$xenTTStats.snatches}, {$xenTTStats.snatches}, 0}</strong></a>
+			<a><span class="label">{xen:phrase torrents}:</span> <strong>{xen:if {$xenTTStats.torrents}, {$xenTTStats.torrents}, 0}</strong></a>
+		</div>
+	</div>
+	
+	<xen:if is="{$xenOptions.xenTorrentTracker.host} && {$xenOptions.xenTorrentTracker.port}">
+		<div class="sectionFooter">
+			http://{$xenOptions.xenTorrentTracker.host}:{$xenOptions.xenTorrentTracker.port}/announce - {xen:if {$xenTTStats.online}, {xen:phrase online}, {xen:phrase offline}}
+		</div>
+	</xen:if>
+</div>]]></template>
+    <template title="xentorrent_clientban_add"><![CDATA[<xen:title>{xen:phrase ban_client}</xen:title>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'torrents/client-ban'}">{xen:phrase client_ban_manager}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:form action="{xen:adminlink 'torrents/client-ban/add'}" class="formOverlay">
+	
+	<xen:textboxunit label="{xen:phrase peer_id}:" hint="{xen:phrase required}" name="peer_id" inputclass="autoSize" maxlength="20">
+		<xen:explain>
+			{xen:phrase peer_id_desc}
+		</xen:explain>	
+	</xen:textboxunit>
+	
+	<xen:textboxunit label="{xen:phrase comment}:" name="comment" maxlength="200" />
+	
+	<xen:submitunit save="{xen:phrase save}" />
+	
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="xentorrent_clientban_list"><![CDATA[<xen:title>{xen:phrase client_ban_manager}</xen:title>
+
+<xen:topctrl>
+	<a href="{xen:adminlink 'torrents/client-ban/add'}" class="button OverlayTrigger">+ {xen:phrase ban_client}</a>
+</xen:topctrl>
+
+<xen:require css="xenforo_data_table.css" />
+
+<xen:if is="{$clients}">
+	<div class="section">
+		<table class="dataTable">
+			<caption>{xen:phrase banned_clients}</caption>
+			<tr class="dataRow subtle">
+			        <th>{xen:phrase peer_id}</th>
+				<th>{xen:phrase comment}</th>				
+				<th></th>
+			</tr>
+			
+			<xen:foreach loop="$clients" value="$client">
+				<tr class="dataRow">
+				        <td>{$client.peer_id}</td>
+					<td >{$client.comment}</td>					
+					<td class="delete">						
+						<a href="{xen:adminlink 'torrents/client-ban/delete', '', 'peer_id={$client.peer_id}'}">{xen:phrase delete}</a>
+					</td>
+				</tr>
+			</xen:foreach>
+		</table>		
+	</div>	
+</xen:if>]]></template>
+    <template title="xentorrent_helper_criteria_user"><![CDATA[<li><label>
+	<input type="checkbox" name="user_criteria[xentt_uploaded][rule]" value="xentt_uploaded" class="Disabler" id="ucrit_xentt_uploaded" {xen:checked $userCriteria.xentt_uploaded} />
+	{xen:phrase user_has_uploaded_at_least_x_mb}:</label>
+	<div class="criteriaQualifier" id="ucrit_xentt_uploaded_Disabler">
+		<xen:spinbox name="user_criteria[xentt_uploaded][data][uploaded]" value="{$userCriteria.xentt_uploaded.uploaded}" size="20" min="0" step="500" />
+	</div>
+</li>
+
+<li><label>
+	<input type="checkbox" name="user_criteria[xentt_downloaded][rule]" value="xentt_downloaded" class="Disabler" id="ucrit_xentt_downloaded" {xen:checked $userCriteria.xentt_downloaded} />
+	{xen:phrase user_has_downloaded_at_least_x_mb}:</label>
+	<div class="criteriaQualifier" id="ucrit_xentt_downloaded_Disabler">
+		<xen:spinbox name="user_criteria[xentt_downloaded][data][downloaded]" value="{$userCriteria.xentt_downloaded.downloaded}" size="20" min="0" step="500" />
+	</div>
+</li>
+]]></template>
+    <template title="xentorrent_ipban_add"><![CDATA[<xen:title>{xen:phrase ban_ip}s</xen:title>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:adminlink 'torrents/ip-ban'}">{xen:phrase ip_ban_manager}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:form action="{xen:adminlink 'torrents/ip-ban/add'}" class="formOverlay">
+	
+	<xen:textboxunit label="{xen:phrase begin}:" hint="{xen:phrase required}" name="begin" inputclass="autoSize" value="">
+		<xen:explain>{xen:phrase example}: 10.0.0.0</xen:explain>
+	</xen:textboxunit>
+	
+	<xen:textboxunit label="{xen:phrase end}:" hint="{xen:phrase required}" name="end" inputclass="autoSize">
+		<xen:explain>{xen:phrase example}: 10.255.255.255</xen:explain>
+	</xen:textboxunit>
+	
+	<xen:textboxunit label="{xen:phrase comment}:" name="comment" maxlength="200" >
+		<xen:explain>{xen:phrase dont_allow_private_networks} - 10.0.0.0/8</xen:explain>
+	</xen:textboxunit>
+	
+	<xen:submitunit save="{xen:phrase save}" />
+	
+	<input type="hidden" name="_xfConfirm" value="1" />
+</xen:form>]]></template>
+    <template title="xentorrent_ipban_list"><![CDATA[<xen:title>{xen:phrase ip_ban_manager}</xen:title>
+
+<xen:topctrl>
+	<a href="{xen:adminlink 'torrents/ip-ban/add'}" class="button OverlayTrigger">+ {xen:phrase ban_ips}</a>
+</xen:topctrl>
+
+<xen:require css="xenforo_data_table.css" />
+
+<xen:if is="{$ips}">
+	<div class="section">
+		
+		<table class="dataTable">
+			<caption>{xen:phrase banned_ips}</caption>
+			<tr class="dataRow subtle">
+				<th>{xen:phrase id}</th>
+				<th width="50%" style="text-align:center;">{xen:phrase comment}</th>
+				<th>{xen:phrase begin}</th>
+				<th>{xen:phrase end}</th>
+				<th></th>
+			</tr>
+			
+			<xen:foreach loop="$ips" key="$id" value="$ip">
+				<tr class="dataRow">
+					<td>{$id}</td>
+					<td style="text-align:center;">{$ip.comment}</td>
+					<td>{xen:helper long2ip, $ip.begin}</td>
+					<td>{xen:helper long2ip, $ip.end}</td>
+					<td class="delete">						
+						<a href="{xen:adminlink 'torrents/ip-ban/delete', '', 'begin={$ip.begin}', 'end={$ip.end}'}">{xen:phrase delete}</a>
+					</td>
+				</tr>
+			</xen:foreach>
+		</table>		
+	</div>	
+</xen:if>]]></template>
+    <template title="xentorrent_log"><![CDATA[<xen:title>{xen:phrase xentorrent_tracker_log}</xen:title>
+
+<xen:require css="filter_list.css" />
+<xen:require js="js/xenforo/filter_list.js" />
+
+<style type="text/css">
+	.alert {
+		background: {xen:property secondaryLightest} url('{xen:property imagePath}/xenforo/gradients/category-23px-light.png') repeat-x top;
+	}
+</style>
+
+<xen:if is="{$entries}">
+
+	<div class="section">
+	
+		<h2 class="subHeading">
+			{xen:phrase update_log}
+		</h2>
+	
+		<ol class="FilterList">
+			<xen:foreach loop="$entries" value="$entry">
+				<xen:listitem class="{$entry.errorClass}" id="{$entry.log_id}"
+					href="{xen:adminlink torrents/log, '', 'log_id={$entry.log_id}'}"
+					linkclass="OverlayTrigger"
+				>
+					<xen:label>
+						{xen:phrase action}: {$entry.action}
+						<span class="secondRow">
+							<xen:datetime time="{$entry.log_date}" class="faint" />
+							-
+							{$entry.message}
+						</span>
+					</xen:label>
+				</xen:listitem>
+			</xen:foreach>
+		</ol>
+	
+		<p class="sectionFooter">{xen:phrase showing_x_of_y_items, 'count=<span class="FilterListCount">{xen:count $entries}</span>', 'total={xen:number $total}'}</p>
+	
+	</div>
+		
+	<xen:adminpagenav page="{$page}" perpage="{$perPage}" total="{$total}" link="torrents/log" />
+
+<xen:else />
+	<div class="noResults">{xen:phrase no_entries_have_been_logged}</div>
+</xen:if>]]></template>
+    <template title="xentorrent_log_view"><![CDATA[<xen:title>{xen:phrase xentorrent_tracker_log_entry}</xen:title>
+
+<div class="section">
+	<div class="overlayScroll">
+		<table width="100%">
+		<tr>
+			<th class="subHeading">{xen:phrase update_log_entry}</th>
+		</tr>
+		<tr>
+			<td class="primaryContent">
+				{xen:phrase action}: {$entry.action}
+				<div class="muted"><xen:datetime time="{$entry.log_date}" /></div>
+			</td>
+		</tr>
+		
+		<tr>
+			<th class="subHeading">{xen:phrase response}</th>
+		</tr>
+		<tr>
+			<td class="primaryContent">{$entry.message}</td>
+		</tr>
+		
+		<tr>
+			<th class="subHeading">{xen:phrase request_state}</th>
+		</tr>
+		<tr>
+			<td class="primaryContent">{xen:helper dump, $entry.params}</td>
+		</tr>
+		</table>
+	</div>
+	<div class="sectionFooter overlayOnly">
+		<a href="{xen:adminlink torrents/log-try-again, '', 'log_id={$entry.log_id}'}" class="button OverlayTrigger">{xen:phrase try_again}</a>
+		<a class="button primary OverlayCloser">{xen:phrase close}</a>
+	</div>
+</div>]]></template>
+    <template title="xentorrent_option_template_registrationDefault"><![CDATA[<xen:controlunit label="{$preparedOption.title}"
+hint="{$preparedOption.hint}">
+	<xen:explain>{xen:raw $preparedOption.explain}</xen:explain>
+	<xen:html>
+		<ul>
+			<li>
+				<xen:spinbox name="{$fieldPrefix}[{$preparedOption.option_id}][upload]" value="{$preparedOption.option_value.upload}" inputclass="number" min="0" step="1" />
+				<p class="explain">{xen:phrase upload_credit} ({xen:phrase in} {xen:phrase mb})</p>
+			</li>
+		
+			<li>
+				<xen:spinbox name="{$fieldPrefix}[{$preparedOption.option_id}][wait_time]" value="{$preparedOption.option_value.wait_time}" inputclass="number" min="0" step="3600" />
+				<p class="explain">{xen:phrase wait_time} ({xen:phrase wait_time_desc})</p>
+			</li>
+			
+			<li>
+				<xen:spinbox name="{$fieldPrefix}[{$preparedOption.option_id}][peers_limit]" value="{$preparedOption.option_value.peers_limit}" inputclass="number" min="0" step="1" />
+				<p class="explain">{xen:phrase peers_limit} ({xen:phrase peers_limit_desc})</p>
+			</li>
+			
+			<li>
+				<label><input type="checkbox" name="{$fieldPrefix}[{$preparedOption.option_id}][can_leech]" value="1" {xen:if {$preparedOption.option_value.can_leech}, 'checked="checked"', ''}> {xen:phrase can_leech}</label>
+				<p class="hint">{xen:phrase can_leech_desc}</p>			
+			</li>
+		</ul>
+		<input type="hidden" name="{$listedFieldName}" value="{$preparedOption.option_id}" />
+		{xen:raw $editLink}
+	</xen:html>
+	
+</xen:controlunit>]]></template>
+    <template title="xentorrent_user_batch_update_confirm"><![CDATA[<fieldset>
+	<xen:checkboxunit label="">
+			<xen:option name="actions[give_freeleech]" value="1" hint="{xen:phrase freeleech_desc}">{xen:phrase give_freeleech_to_users}</xen:option>
+			<xen:option name="actions[remove_freeleech]" value="1">{xen:phrase remove_freeleech_from_users}</xen:option>
+	</xen:checkboxunit>
+</fielset>]]></template>
+    <template title="xentorrent_user_extra"><![CDATA[<div>	
+	<h3 class="textHeading">{xen:phrase bit_torrent}</h3>
+	
+	<xen:checkboxunit label="">
+		<xen:option name="can_leech" selected="{$user.can_leech}" hint="{xen:phrase can_leech_desc}">{xen:phrase can_leech}</xen:option>
+		<xen:option name="freeleech" hint="{xen:phrase freeleech_desc}" selected="{$user.freeleech}">{xen:phrase freeleech}</xen:option>
+	</xen:checkboxunit>
+	
+	<div class="xenForm">
+		<xen:spinboxunit hint="{xen:phrase bytes}" label="{xen:phrase downloaded}:" name="downloaded" inputclass="autoSize" value="{$user.downloaded}" min="0" step="1048576" />
+		<xen:spinboxunit hint="{xen:phrase bytes}" label="{xen:phrase uploaded}:" name="uploaded" inputclass="autoSize" value="{$user.uploaded}" min="0" step="1048576" />
+	
+		<xen:spinboxunit label="{xen:phrase wait_time}:" name="wait_time" inputclass="autoSize" value="{$user.wait_time}" min="0" step="60">
+			<xen:explain>{xen:phrase wait_time_desc}</xen:explain>
+		</xen:spinboxunit>
+	
+		<xen:spinboxunit label="{xen:phrase peers_limit}:" name="peers_limit" inputclass="autoSize" value="{$user.peers_limit}" min="0" step="1">
+			<xen:explain>{xen:phrase peers_limit_desc}</xen:explain>
+		</xen:spinboxunit>
+		
+		<xen:spinboxunit label="{xen:phrase bonus_points}:" name="seedbonus" inputclass="autoSize" value="{xen:calc '{$user.seedbonus}/10'}" min="0" step="10" />
+	</div>
+	
+	<xen:checkboxunit label="">
+		<xen:option name="reset_passkey" value="1" hint="If specified, this will reset the passkey of this user.">{xen:phrase reset_passkey}</xen:option>
+	</xen:checkboxunit>
+		
+	<input type="hidden" name="user_edit_form" value="1" />
+</div>]]></template>
+    <template title="xentorrent_user_upgrade_edit"><![CDATA[<h3 class="textHeading">{xen:phrase bit_torrent} 
+	<span class="muted" style="font-size:11px;font-weight:normal;">({xen:phrase following_values_will_be_set_for_the_user_while_upgrade_is_active})</span>
+</h3>
+
+<xen:checkboxunit label="">
+	<xen:option name="xentt_options[can_leech]" selected="{$upgrade.can_leech}" hint="{xen:phrase can_leech_desc}">{xen:phrase can_leech}</xen:option>
+	<xen:option name="xentt_options[freeleech]" hint="{xen:phrase freeleech_desc}" selected="{$upgrade.freeleech}">{xen:phrase freeleech}</xen:option>
+</xen:checkboxunit>
+	
+<xen:spinboxunit label="{xen:phrase wait_time}:" name="xentt_options[wait_time]" size="10" value="{$upgrade.wait_time}" min="0" step="60">
+	<xen:explain>{xen:phrase wait_time_desc}</xen:explain>
+</xen:spinboxunit>
+
+<xen:spinboxunit label="{xen:phrase peers_limit}:" name="xentt_options[peers_limit]" size="4" value="{$upgrade.peers_limit}" min="0" step="1">
+	<xen:explain>{xen:phrase peers_limit_desc}</xen:explain>
+</xen:spinboxunit>]]></template>
+  </admin_templates>
+  <admin_template_modifications>
+    <modification template="category_edit" modification_key="xentorrent_category_edit" description="" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<!-- slot: after_display_in_list -->]]></find>
+      <replace><![CDATA[$0
+<xen:checkboxunit label="">
+<xen:option name="is_torrent_category" label="{xen:phrase torrent_category}" selected="{$category.is_torrent_category}" />
+</xen:checkboxunit>]]></replace>
+    </modification>
+    <modification template="forum_edit" modification_key="xentorrent_forum_edit" description="" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<!-- slot: after_display_in_list -->]]></find>
+      <replace><![CDATA[$0
+<xen:checkboxunit label="">
+<xen:option name="is_torrent_category" label="{xen:phrase torrent_category}" selected="{$forum.is_torrent_category}" />
+</xen:checkboxunit>]]></replace>
+    </modification>
+    <modification template="user_batch_update_confirm" modification_key="xentorrent_user_batch_update_confirm" description="" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<xen:submitunit save="{xen:phrase update_users}" explain="{xen:phrase super_admins_will_not_be_updated}" />]]></find>
+      <replace><![CDATA[<xen:include template="xentorrent_user_batch_update_confirm" />
+$0]]></replace>
+    </modification>
+    <modification template="user_extra" modification_key="xentorrent_user_extra" description="" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<xen:title>{$user.username}</xen:title>]]></find>
+      <replace><![CDATA[$0
+<xen:include template="xentorrent_user_extra" />]]></replace>
+    </modification>
+    <modification template="user_upgrade_edit" modification_key="xentorrent_user_upgrade_edit" description="" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<xen:submitunit save="{xen:phrase save_user_upgrade}">]]></find>
+      <replace><![CDATA[<xen:include template="xentorrent_user_upgrade_edit" />
+$0]]></replace>
+    </modification>
+    <modification template="helper_criteria_user" modification_key="xentt_helper_criteria_user" description="" execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<xen:hook name="user_criteria_content">)(.*?)(<\/xen:hook>)#si]]></find>
+      <replace><![CDATA[$1
+$2
+<xen:include template="xentorrent_helper_criteria_user" />
+$3]]></replace>
+    </modification>
+  </admin_template_modifications>
+  <code_events/>
+  <code_event_listeners>
+    <listener event_id="criteria_user" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="userMatchesCriteria" active="1" hint="XenTorrentTracker_Listener" description=""/>
+    <listener event_id="init_dependencies" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="initDependencies" active="1" hint="" description=""/>
+    <listener event_id="load_class" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadClass" active="1" hint="XenForo_AttachmentHandler_Post" description="XenForo_AttachmentHandler_Post"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerPublic_Member" description="XenForo_ControllerPublic_Member"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerPublic_Thread" description="XenForo_ControllerPublic_Thread"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerAdmin_Option" description="XenForo_ControllerAdmin_Option"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerAdmin_Forum" description="XenForo_ControllerAdmin_Forum"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerAdmin_UserUpgrade" description="XenForo_ControllerAdmin_UserUpgrade"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerAdmin_User" description="XenForo_ControllerAdmin_User"/>
+    <listener event_id="load_class_controller" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadController" active="1" hint="XenForo_ControllerPublic_Attachment" description="XenForo_ControllerPublic_Attachment"/>
+    <listener event_id="load_class_datawriter" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadDataWriter" active="1" hint="" description=""/>
+    <listener event_id="load_class_model" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadModel" active="1" hint="XenForo_Model_Thread" description="XenForo_Model_Thread"/>
+    <listener event_id="load_class_model" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadModel" active="1" hint="XenForo_Model_User" description="XenForo_Model_User"/>
+    <listener event_id="load_class_model" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadModel" active="1" hint="XenForo_Model_UserUpgrade" description="XenForo_Model_UserUpgrade"/>
+    <listener event_id="load_class_model" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadModel" active="1" hint="XenForo_Model_Attachment" description="XenForo_Model_Attachment"/>
+    <listener event_id="load_class_view" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="loadView" active="1" hint="XenForo_ViewPublic_Attachment_View" description="XenForo_ViewPublic_Attachment_View"/>
+    <listener event_id="navigation_tabs" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="navigationTabs" active="1" hint="" description=""/>
+    <listener event_id="template_create" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="templateCreate" active="1" hint="" description=""/>
+    <listener event_id="template_hook" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="addTemplateHooks" active="1" hint="" description=""/>
+    <listener event_id="visitor_setup" execute_order="10" callback_class="XenTorrentTracker_Listener" callback_method="visitorSetup" active="1" hint="" description=""/>
+  </code_event_listeners>
+  <cron>
+    <entry entry_id="xenTTUpdateDaily" cron_class="XenTorrentTracker_CronEntry_Tracker" cron_method="updateDaily" active="1"><![CDATA[{"day_type":"dom","dom":["-1"],"hours":["1"],"minutes":["0"]}]]></entry>
+    <entry entry_id="xenTTUpdateHourly" cron_class="XenTorrentTracker_CronEntry_Tracker" cron_method="updateHourly" active="1"><![CDATA[{"day_type":"dom","dom":["-1"],"hours":["-1"],"minutes":["23"]}]]></entry>
+    <entry entry_id="xenTTUpdateWeekly" cron_class="XenTorrentTracker_CronEntry_Tracker" cron_method="updateWeekly" active="1"><![CDATA[{"day_type":"dow","dow":["1"],"hours":["4"],"minutes":["3"]}]]></entry>
+  </cron>
+  <email_templates/>
+  <email_template_modifications/>
+  <optiongroups>
+    <group group_id="xenTorrentTrackerOptions" display_order="5000" debug_only="0"/>
+    <option option_id="xenTTNewUser" edit_format="template" data_type="array" can_backup="1">
+      <default_value>a:3:{s:6:"upload";s:4:"2048";s:9:"wait_time";s:1:"0";s:9:"can_leech";s:1:"1";}</default_value>
+      <edit_format_params>xentorrent_option_template_registrationDefault</edit_format_params>
+      <sub_options>upload
+wait_time
+can_leech
+peers_limit</sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="200"/>
+    </option>
+    <option option_id="xenTTPerPage" edit_format="spinbox" data_type="positive_integer" can_backup="1">
+      <default_value>20</default_value>
+      <edit_format_params>min=1
+step=5</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="700"/>
+    </option>
+    <option option_id="xenTTStatsOnHome" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="810"/>
+    </option>
+    <option option_id="xenTorrentCategoriesImagePath" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value>/styles/xentorrent/categories/</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="710"/>
+    </option>
+    <option option_id="xenTorrentCloudfare" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>0</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="920"/>
+    </option>
+    <option option_id="xenTorrentComment" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value></default_value>
+      <edit_format_params>rows=2</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="1100"/>
+    </option>
+    <option option_id="xenTorrentGlobalFreeleech" edit_format="radio" data_type="boolean" can_backup="1">
+      <default_value>0</default_value>
+      <edit_format_params>1=Yes
+0=No</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="1000"/>
+    </option>
+    <option option_id="xenTorrentMagnetLink" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>0</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="910"/>
+    </option>
+    <option option_id="xenTorrentMinimumPost" edit_format="spinbox" data_type="unsigned_integer" can_backup="1">
+      <default_value></default_value>
+      <edit_format_params>min=0
+step=10</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="520"/>
+    </option>
+    <option option_id="xenTorrentMinimumRatio" edit_format="textbox" data_type="unsigned_numeric" can_backup="1">
+      <default_value>0.2</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="500"/>
+    </option>
+    <option option_id="xenTorrentMustLike" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>0</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="531"/>
+    </option>
+    <option option_id="xenTorrentMustReply" edit_format="onoff" data_type="boolean" can_backup="1">
+      <default_value>0</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="530"/>
+    </option>
+    <option option_id="xenTorrentPrivateFlag" edit_format="radio" data_type="boolean" can_backup="1">
+      <default_value>1</default_value>
+      <edit_format_params>1=Yes
+0=No</edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="900"/>
+    </option>
+    <option option_id="xenTorrentReseedInterval" edit_format="textbox" data_type="string" can_backup="1">
+      <default_value>86400</default_value>
+      <edit_format_params></edit_format_params>
+      <sub_options></sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="1200"/>
+    </option>
+    <option option_id="xenTorrentTracker" edit_format="template" data_type="array" can_backup="1">
+      <default_value>a:2:{s:4:"host";s:0:"";s:4:"port";s:4:"2710";}</default_value>
+      <edit_format_params>option_template_xenTorrentTracker</edit_format_params>
+      <sub_options>host
+port</sub_options>
+      <relation group_id="xenTorrentTrackerOptions" display_order="100"/>
+    </option>
+  </optiongroups>
+  <permissions>
+    <permission_groups>
+      <permission_group permission_group_id="xenTorrentTracker"/>
+    </permission_groups>
+    <permissions>
+      <permission permission_group_id="xenTorrentTracker" permission_id="canMakeFreeleech" permission_type="flag" default_value="unset" interface_group_id="xenTorrentTracker" display_order="4"/>
+      <permission permission_group_id="xenTorrentTracker" permission_id="download" permission_type="flag" default_value="unset" interface_group_id="xenTorrentTracker" display_order="2"/>
+      <permission permission_group_id="xenTorrentTracker" permission_id="maxReseedRequest" permission_type="integer" default_value_int="0" interface_group_id="xenTorrentTracker" display_order="7"/>
+      <permission permission_group_id="xenTorrentTracker" permission_id="upload" permission_type="flag" default_value="unset" interface_group_id="xenTorrentTracker" display_order="3"/>
+      <permission permission_group_id="xenTorrentTracker" permission_id="view" permission_type="flag" default_value="unset" interface_group_id="xenTorrentTracker" display_order="1"/>
+      <permission permission_group_id="xenTorrentTracker" permission_id="viewPeerList" permission_type="flag" default_value="unset" interface_group_id="xenTorrentTracker" display_order="5"/>
+      <permission permission_group_id="xenTorrentTracker" permission_id="viewSnatchList" permission_type="flag" default_value="unset" interface_group_id="xenTorrentTracker" display_order="6"/>
+    </permissions>
+    <interface_groups>
+      <interface_group interface_group_id="xenTorrentTracker" display_order="1"/>
+    </interface_groups>
+  </permissions>
+  <phrases>
+    <phrase title="accept" version_id="1" version_string="1.0"><![CDATA[Accept]]></phrase>
+    <phrase title="accepted" version_id="1" version_string="1.0"><![CDATA[Accepted]]></phrase>
+    <phrase title="active_requests" version_id="1" version_string="1.0"><![CDATA[Active Requests]]></phrase>
+    <phrase title="active_torrents" version_id="1" version_string="1.0"><![CDATA[Active Torrents]]></phrase>
+    <phrase title="add_new_ip" version_id="1" version_string="1.0"><![CDATA[Add New IP]]></phrase>
+    <phrase title="admin_navigation_xenTorrentClientBan" version_id="1" version_string="1.0"><![CDATA[Client Ban Manager]]></phrase>
+    <phrase title="admin_navigation_xenTorrentIPBanManager" version_id="1" version_string="1.0"><![CDATA[IP Ban Manager]]></phrase>
+    <phrase title="admin_navigation_xenTorrentSettings" version_id="1" version_string="1.0"><![CDATA[Settings]]></phrase>
+    <phrase title="admin_navigation_xenTorrentTracker" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker]]></phrase>
+    <phrase title="admin_navigation_xenTTLog" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker Log]]></phrase>
+    <phrase title="admin_permission_manageXenTracker" version_id="1" version_string="1.0"><![CDATA[Manage XenTorrent Tracker]]></phrase>
+    <phrase title="agent" version_id="1" version_string="1.0"><![CDATA[Agent]]></phrase>
+    <phrase title="announced" version_id="1" version_string="1.0"><![CDATA[Announced]]></phrase>
+    <phrase title="announce_url" version_id="1" version_string="1.0"><![CDATA[Announce URL]]></phrase>
+    <phrase title="attached_torrents" version_id="1" version_string="1.0"><![CDATA[Attached Torrents]]></phrase>
+    <phrase title="banned_clients" version_id="1" version_string="1.0"><![CDATA[Banned Clients]]></phrase>
+    <phrase title="ban_client" version_id="1" version_string="1.0"><![CDATA[Ban Client]]></phrase>
+    <phrase title="ban_ips" version_id="6" version_string="1.1"><![CDATA[Ban IPs]]></phrase>
+    <phrase title="begin" version_id="1" version_string="1.0"><![CDATA[Begin]]></phrase>
+    <phrase title="best_seeded" version_id="1" version_string="1.0"><![CDATA[Best Seeded]]></phrase>
+    <phrase title="bittorrent_tracker_stats" version_id="1" version_string="1.0"><![CDATA[BitTorrent Tracker Stats]]></phrase>
+    <phrase title="bit_torrent" version_id="1" version_string="1.0"><![CDATA[BitTorrent]]></phrase>
+    <phrase title="bonus_points" version_id="1" version_string="1.0"><![CDATA[Bonus Points]]></phrase>
+    <phrase title="bonus_points_redeem_desc" version_id="1" version_string="1.0"><![CDATA[The points are then removed from your Bonus Bank and the credit is added to your total uploaded amount.]]></phrase>
+    <phrase title="bonus_points_system" version_id="1" version_string="1.0"><![CDATA[Bonus Points System]]></phrase>
+    <phrase title="bonus_points_system_desc" version_id="1" version_string="1.0"><![CDATA[Exchange your Bonus Points for upload credits!]]></phrase>
+    <phrase title="can_leech" version_id="1" version_string="1.0"><![CDATA[Can Leech]]></phrase>
+    <phrase title="can_leech_desc" version_id="1" version_string="1.0"><![CDATA[If not specified, user can't leech (download the files inside the torrent).]]></phrase>
+    <phrase title="categories" version_id="6" version_string="1.1"><![CDATA[Categories]]></phrase>
+    <phrase title="category" version_id="6" version_string="1.1"><![CDATA[Category]]></phrase>
+    <phrase title="check_status" version_id="1" version_string="1.0"><![CDATA[Check Status]]></phrase>
+    <phrase title="client" version_id="1" version_string="1.0"><![CDATA[Client]]></phrase>
+    <phrase title="client_ban_manager" version_id="1" version_string="1.0"><![CDATA[Client Ban Manager]]></phrase>
+    <phrase title="closed_requests" version_id="1" version_string="1.0"><![CDATA[Closed Requests]]></phrase>
+    <phrase title="complete" version_id="6" version_string="1.1"><![CDATA[complete]]></phrase>
+    <phrase title="completed" version_id="6" version_string="1.1"><![CDATA[completed]]></phrase>
+    <phrase title="created_with" version_id="1" version_string="1.0"><![CDATA[Created With]]></phrase>
+    <phrase title="cron_entry_xenTTUpdateDaily" version_id="1" version_string="1.0"><![CDATA[Update XenTorrent Tracker Daily]]></phrase>
+    <phrase title="cron_entry_xenTTUpdateHourly" version_id="1" version_string="1.0"><![CDATA[Update XenTorrent Tracker Hourly]]></phrase>
+    <phrase title="cron_entry_xenTTUpdateWeekly" version_id="1" version_string="1.0"><![CDATA[Update XenTorrent Tracker Weekly]]></phrase>
+    <phrase title="currently_you_have_x_points" version_id="1" version_string="1.0"><![CDATA[Currently you have {points} Bonus Points! ]]></phrase>
+    <phrase title="dl" version_id="1" version_string="1.0"><![CDATA[DL]]></phrase>
+    <phrase title="dl_speed" version_id="1" version_string="1.0"><![CDATA[DL Speed]]></phrase>
+    <phrase title="dont_allow_private_networks" version_id="1" version_string="1.0"><![CDATA[Don't allow private networks]]></phrase>
+    <phrase title="down" version_id="1" version_string="1.0"><![CDATA[Down]]></phrase>
+    <phrase title="download" version_id="6" version_string="1.1"><![CDATA[Download]]></phrase>
+    <phrase title="downloaded" version_id="1" version_string="1.0"><![CDATA[Downloaded]]></phrase>
+    <phrase title="end" version_id="6" version_string="1.1"><![CDATA[End]]></phrase>
+    <phrase title="failed_to_reset_passkey_try_contact_owner" version_id="1" version_string="1.0"><![CDATA[Failed to reset your passkey. Please try again or contact the site owner.]]></phrase>
+    <phrase title="filename" version_id="1" version_string="1.0"><![CDATA[Filename]]></phrase>
+    <phrase title="files" version_id="9" version_string="1.2"><![CDATA[Files]]></phrase>
+    <phrase title="filter_torrents" version_id="1" version_string="1.0"><![CDATA[Filter torrents]]></phrase>
+    <phrase title="following_values_will_be_set_for_the_user_while_upgrade_is_active" version_id="1" version_string="1.0"><![CDATA[Following values will be set for the user while upgrade is active]]></phrase>
+    <phrase title="for_every_hour_that_you_seed_awarded_1_point" version_id="1" version_string="1.0"><![CDATA[For every hour that you seed a torrent, you are awarded with 1 Bonus Point.]]></phrase>
+    <phrase title="freeleech" version_id="1" version_string="1.0"><![CDATA[Freeleech]]></phrase>
+    <phrase title="freeleech_desc" version_id="1" version_string="1.0"><![CDATA[Only uploading is taken into account, and the downloading is totally ignored.]]></phrase>
+    <phrase title="freeleech_requests" version_id="1" version_string="1.0"><![CDATA[Freeleech Requests]]></phrase>
+    <phrase title="give_freeleech_to_users" version_id="2" version_string="1.0"><![CDATA[Give freeleech to users]]></phrase>
+    <phrase title="hall_of_shame" version_id="1" version_string="1.0"><![CDATA[Hall Of Shame]]></phrase>
+    <phrase title="inactive" version_id="1" version_string="1.0"><![CDATA[Inactive]]></phrase>
+    <phrase title="invalid_option_specified" version_id="1" version_string="1.0"><![CDATA[Invalid option speficied]]></phrase>
+    <phrase title="invalid_torrent_category_specified" version_id="1" version_string="1.0"><![CDATA[Invalid torrent category specified]]></phrase>
+    <phrase title="invalid_torrent_file" version_id="1" version_string="1.0"><![CDATA[Invalid torrent file]]></phrase>
+    <phrase title="ip_ban_manager" version_id="1" version_string="1.0"><![CDATA[IP Ban Manager]]></phrase>
+    <phrase title="last_announce" version_id="1" version_string="1.0"><![CDATA[Last Announce]]></phrase>
+    <phrase title="leechers" version_id="1" version_string="1.0"><![CDATA[Leechers]]></phrase>
+    <phrase title="leeching" version_id="1" version_string="1.0"><![CDATA[Leeching]]></phrase>
+    <phrase title="list_of_users_reported_a_snatch_to_tracker" version_id="1" version_string="1.0"><![CDATA[List of users that have reported a snatch to the tracker.]]></phrase>
+    <phrase title="make_freeleech" version_id="1" version_string="1.0"><![CDATA[Make Freeleech]]></phrase>
+    <phrase title="minimum_post_required_to_download_torrent_is_x" version_id="1" version_string="1.0"><![CDATA[Minimum post required to download this torrent is {post}.]]></phrase>
+    <phrase title="minimum_ratio_required_to_download_torrent_is_x" version_id="1" version_string="1.0"><![CDATA[Minimum ratio required to download torrent is {ratio}]]></phrase>
+    <phrase title="most_active" version_id="1" version_string="1.0"><![CDATA[Most Active]]></phrase>
+    <phrase title="most_completed" version_id="1" version_string="1.0"><![CDATA[Most Completed]]></phrase>
+    <phrase title="my_bittorrent_stats" version_id="1" version_string="1.0"><![CDATA[My BitTorrent Stats]]></phrase>
+    <phrase title="my_bonus" version_id="1" version_string="1.0"><![CDATA[My Bonus]]></phrase>
+    <phrase title="no_comment_for_this_torrent" version_id="1" version_string="1.0"><![CDATA[No comment for this torrent]]></phrase>
+    <phrase title="number_of_leechers" version_id="1" version_string="1.0"><![CDATA[Number of leechers]]></phrase>
+    <phrase title="number_of_seeders" version_id="1" version_string="1.0"><![CDATA[Number of seeders]]></phrase>
+    <phrase title="number_of_snatches" version_id="1" version_string="1.0"><![CDATA[Number of snatches]]></phrase>
+    <phrase title="offline" version_id="1" version_string="1.0"><![CDATA[Offline]]></phrase>
+    <phrase title="online" version_id="1" version_string="1.0"><![CDATA[Online]]></phrase>
+    <phrase title="only_one_torrent_allowed_per_thread" version_id="1" version_string="1.0"><![CDATA[Only one torrent allowed per thread]]></phrase>
+    <phrase title="option_group_xenTorrentTrackerOptions" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker Options]]></phrase>
+    <phrase title="option_group_xenTorrentTrackerOptions_description" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentCategoriesImagePath" version_id="1" version_string="1.0"><![CDATA[Categories image path]]></phrase>
+    <phrase title="option_xenTorrentCategoriesImagePath_explain" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentCloudfare" version_id="15" version_string="1.2.1"><![CDATA[Enable Cloudfare Support]]></phrase>
+    <phrase title="option_xenTorrentCloudfare_explain" version_id="15" version_string="1.2.1"><![CDATA[Cloudfare HTTP Ports: 80, 8080, 8880, 2052, 2082, 2086, 2095]]></phrase>
+    <phrase title="option_xenTorrentComment" version_id="7" version_string="1.1"><![CDATA[Override Torrent Comment]]></phrase>
+    <phrase title="option_xenTorrentComment_explain" version_id="7" version_string="1.1"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentGlobalFreeleech" version_id="1" version_string="1.0"><![CDATA[Global FreeLeech]]></phrase>
+    <phrase title="option_xenTorrentGlobalFreeleech_explain" version_id="1" version_string="1.0"><![CDATA[Free leech means that what users download will not be counted.]]></phrase>
+    <phrase title="option_xenTorrentMagnetLink" version_id="1" version_string="1.0"><![CDATA[Enable Magnet Link]]></phrase>
+    <phrase title="option_xenTorrentMagnetLink_explain" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentMinimumPost" version_id="1" version_string="1.0"><![CDATA[Minimum Post]]></phrase>
+    <phrase title="option_xenTorrentMinimumPost_explain" version_id="1" version_string="1.0"><![CDATA[User with posts less than specified value will not be allowed to download torrent.]]></phrase>
+    <phrase title="option_xenTorrentMinimumRatio" version_id="1" version_string="1.0"><![CDATA[Minimum Ratio]]></phrase>
+    <phrase title="option_xenTorrentMinimumRatio_explain" version_id="1" version_string="1.0"><![CDATA[User with ratio less than specified value will not be allowed to download new torrents. Set 0 to disable ratio system.]]></phrase>
+    <phrase title="option_xenTorrentMustLike" version_id="5" version_string="1.1"><![CDATA[Must Like To Download Torrent]]></phrase>
+    <phrase title="option_xenTorrentMustLike_explain" version_id="5" version_string="1.1"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentMustReply" version_id="5" version_string="1.1"><![CDATA[Must Reply To Download Torrent]]></phrase>
+    <phrase title="option_xenTorrentMustReply_explain" version_id="5" version_string="1.1"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentPrivateFlag" version_id="1" version_string="1.0"><![CDATA[Private Flag]]></phrase>
+    <phrase title="option_xenTorrentPrivateFlag_explain" version_id="1" version_string="1.0"><![CDATA[The purpose of the private flag is to prevent torrents from being shared with clients that do not have access to the tracker. If you turn off this option, then your torrent tracker will be a public tracker.]]></phrase>
+    <phrase title="option_xenTorrentReseedInterval" version_id="7" version_string="1.1"><![CDATA[Number of seconds after which user can ask for reseed]]></phrase>
+    <phrase title="option_xenTorrentReseedInterval_explain" version_id="7" version_string="1.1"><![CDATA[]]></phrase>
+    <phrase title="option_xenTorrentTracker" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker Details]]></phrase>
+    <phrase title="option_xenTorrentTracker_explain" version_id="1" version_string="1.0"><![CDATA[These details will be used to connect to your XBT Tracker for update and will also be used as announce URL.]]></phrase>
+    <phrase title="option_xenTTNewUser" version_id="1" version_string="1.0"><![CDATA[Default User Registration Values]]></phrase>
+    <phrase title="option_xenTTNewUser_explain" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="option_xenTTPerPage" version_id="1" version_string="1.0"><![CDATA[Torrents Per Page]]></phrase>
+    <phrase title="option_xenTTPerPage_explain" version_id="1" version_string="1.0"><![CDATA[This controls the maximum number of torrents that will be shown on one page.]]></phrase>
+    <phrase title="option_xenTTStatsOnHome" version_id="1" version_string="1.0"><![CDATA[Display tracker stats]]></phrase>
+    <phrase title="option_xenTTStatsOnHome_explain" version_id="1" version_string="1.0"><![CDATA[if specified, displays tracker stats on forum index.]]></phrase>
+    <phrase title="peers" version_id="1" version_string="1.0"><![CDATA[Peers]]></phrase>
+    <phrase title="peers_limit" version_id="1" version_string="1.0"><![CDATA[Peers Limit]]></phrase>
+    <phrase title="peers_limit_desc" version_id="1" version_string="1.0"><![CDATA[The maximum permitted simultaneous connections per torrent. The default is 0 (unlimited)]]></phrase>
+    <phrase title="peer_id" version_id="1" version_string="1.0"><![CDATA[Peer ID]]></phrase>
+    <phrase title="peer_id_desc" version_id="1" version_string="1.0"><![CDATA[Clients with peer_id starting with this are banned from using tracker. <br />
+You can check for a more detailed description of the clients in this <a target="_blank" href="https://wiki.theory.org/BitTorrentSpecification#peer_id">link</a>]]></phrase>
+    <phrase title="peer_list" version_id="1" version_string="1.0"><![CDATA[Peer List]]></phrase>
+    <phrase title="permission_group_xenTorrentTracker" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker Permissions]]></phrase>
+    <phrase title="permission_interface_xenTorrentTracker" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker]]></phrase>
+    <phrase title="permission_xenTorrentTracker_canMakeFreeleech" version_id="1" version_string="1.0"><![CDATA[Can accept freeleech request]]></phrase>
+    <phrase title="permission_xenTorrentTracker_download" version_id="1" version_string="1.0"><![CDATA[Download torrents]]></phrase>
+    <phrase title="permission_xenTorrentTracker_maxReseedRequest" version_id="6" version_string="1.1"><![CDATA[Max reseed request per day]]></phrase>
+    <phrase title="permission_xenTorrentTracker_upload" version_id="1" version_string="1.0"><![CDATA[Upload torrents]]></phrase>
+    <phrase title="permission_xenTorrentTracker_view" version_id="1" version_string="1.0"><![CDATA[View torrents list page]]></phrase>
+    <phrase title="permission_xenTorrentTracker_viewPeerList" version_id="1" version_string="1.0"><![CDATA[View peer list of a torrent]]></phrase>
+    <phrase title="permission_xenTorrentTracker_viewSnatchList" version_id="1" version_string="1.0"><![CDATA[View snatch list of a torrent]]></phrase>
+    <phrase title="points_needed" version_id="1" version_string="1.0"><![CDATA[Points Needed]]></phrase>
+    <phrase title="private_key_not_set" version_id="1" version_string="1.0"><![CDATA[Private key not set]]></phrase>
+    <phrase title="progress" version_id="1" version_string="1.0"><![CDATA[Progress]]></phrase>
+    <phrase title="ratio" version_id="1" version_string="1.0"><![CDATA[Ratio]]></phrase>
+    <phrase title="redeem" version_id="1" version_string="1.0"><![CDATA[Redeem]]></phrase>
+    <phrase title="remove_freeleech" version_id="1" version_string="1.0"><![CDATA[Remove Freeleech]]></phrase>
+    <phrase title="remove_freeleech_from_users" version_id="2" version_string="1.0"><![CDATA[Remove freeleech from users]]></phrase>
+    <phrase title="requested_torrent_not_found" version_id="1" version_string="1.0"><![CDATA[The requested torrent could not be found.]]></phrase>
+    <phrase title="requests" version_id="1" version_string="1.0"><![CDATA[Requests]]></phrase>
+    <phrase title="request_date" version_id="1" version_string="1.0"><![CDATA[Request Date]]></phrase>
+    <phrase title="request_failed" version_id="6" version_string="1.1"><![CDATA[Request Failed!]]></phrase>
+    <phrase title="request_freeleech" version_id="1" version_string="1.0"><![CDATA[Request Freeleech]]></phrase>
+    <phrase title="request_freeleech_desc" version_id="1" version_string="1.0"><![CDATA[A request will be send to staff members for making this torrent a freeleech torrent.]]></phrase>
+    <phrase title="request_reseed" version_id="6" version_string="1.1"><![CDATA[Request Reseed]]></phrase>
+    <phrase title="request_sent" version_id="1" version_string="1.0"><![CDATA[Request Sent]]></phrase>
+    <phrase title="reset_passkey" global_cache="1" version_id="1" version_string="1.0"><![CDATA[Reset Passkey]]></phrase>
+    <phrase title="reset_passkey_desc" version_id="1" version_string="1.0"><![CDATA[Every time that you reset your passkey, you must re-download every single torrent that you are downloading or seeding at the same time Or else the tracker will respond to you with a `Unregistered Torrent Pass` error.]]></phrase>
+    <phrase title="response" version_id="1" version_string="1.0"><![CDATA[Response]]></phrase>
+    <phrase title="search_torrents" version_id="1" version_string="1.0"><![CDATA[Search Torrents]]></phrase>
+    <phrase title="seeders" version_id="1" version_string="1.0"><![CDATA[Seeders]]></phrase>
+    <phrase title="seeding" version_id="1" version_string="1.0"><![CDATA[Seeding]]></phrase>
+    <phrase title="seeds" version_id="1" version_string="1.0"><![CDATA[Seeds]]></phrase>
+    <phrase title="select_category_that_best_describes_your_torrent" version_id="1" version_string="1.0"><![CDATA[Select the category that best describes your torrent.]]></phrase>
+    <phrase title="showing_torrents_x_to_y_of_z" version_id="1" version_string="1.0"><![CDATA[Showing torrents {start} to {end} of {total}]]></phrase>
+    <phrase title="snatchers_list" version_id="1" version_string="1.0"><![CDATA[Snatchers List]]></phrase>
+    <phrase title="snatches" version_id="1" version_string="1.0"><![CDATA[Snatches]]></phrase>
+    <phrase title="stats_are_updated_weekly" version_id="1" version_string="1.0"><![CDATA[Stats are updated weekly]]></phrase>
+    <phrase title="style_property_badRatio_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_badRatio_master" version_id="1" version_string="1.0"><![CDATA[Bad Ratio]]></phrase>
+    <phrase title="style_property_download_description_master" version_id="6" version_string="1.1"><![CDATA[]]></phrase>
+    <phrase title="style_property_download_master" version_id="6" version_string="1.1"><![CDATA[Download]]></phrase>
+    <phrase title="style_property_goodRatio_description_master" version_id="1" version_string="1.0"><![CDATA[Color for ratio greater or equal to 1.]]></phrase>
+    <phrase title="style_property_goodRatio_master" version_id="1" version_string="1.0"><![CDATA[Good Ratio]]></phrase>
+    <phrase title="style_property_leechers_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_leechers_master" version_id="1" version_string="1.0"><![CDATA[Leechers]]></phrase>
+    <phrase title="style_property_messageShowXenTTStats_description_master" version_id="1" version_string="1.0"><![CDATA[Display the message poster's torrent tracker stats, if specified.]]></phrase>
+    <phrase title="style_property_messageShowXenTTStats_master" version_id="1" version_string="1.0"><![CDATA[Show torrent tracker stats]]></phrase>
+    <phrase title="style_property_ratioColor_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_ratioColor_master" version_id="1" version_string="1.0"><![CDATA[Ratio Color]]></phrase>
+    <phrase title="style_property_seedBonus_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_seedBonus_master" version_id="1" version_string="1.0"><![CDATA[Seed Bonus]]></phrase>
+    <phrase title="style_property_seeders_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_seeders_master" version_id="1" version_string="1.0"><![CDATA[Seeders]]></phrase>
+    <phrase title="style_property_trackerOffline_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_trackerOffline_master" version_id="1" version_string="1.0"><![CDATA[Tracker Offline]]></phrase>
+    <phrase title="style_property_trackerOnline_description_master" version_id="1" version_string="1.0"><![CDATA[]]></phrase>
+    <phrase title="style_property_trackerOnline_master" version_id="1" version_string="1.0"><![CDATA[Tracker Online]]></phrase>
+    <phrase title="style_property_upload_i_description_master" version_id="6" version_string="1.1"><![CDATA[]]></phrase>
+    <phrase title="style_property_upload_i_master" version_id="6" version_string="1.1"><![CDATA[Upload]]></phrase>
+    <phrase title="there_no_active_requests_requiring_your_attention" version_id="1" version_string="1.0"><![CDATA[There are no active requests requiring your attention.]]></phrase>
+    <phrase title="there_no_torrents_to_display" version_id="1" version_string="1.0"><![CDATA[There are no torrents to display.]]></phrase>
+    <phrase title="there_was_already_reseed_request_for_this_torrent" version_id="6" version_string="1.1"><![CDATA[There was already a re-seed request for this torrent within the last 24hrs.]]></phrase>
+    <phrase title="this_torrent_is_already_uploaded_before" version_id="1" version_string="1.0"><![CDATA[This torrent is already uploaded before]]></phrase>
+    <phrase title="time" version_id="1" version_string="1.0"><![CDATA[Time]]></phrase>
+    <phrase title="times" version_id="1" version_string="1.0"><![CDATA[times]]></phrase>
+    <phrase title="timespent" version_id="1" version_string="1.0"><![CDATA[Timespent]]></phrase>
+    <phrase title="top_10" version_id="1" version_string="1.0"><![CDATA[Top 10]]></phrase>
+    <phrase title="top_10_best_seeded_torrents" version_id="1" version_string="1.0"><![CDATA[Top 10 Best Seeded Torrents]]></phrase>
+    <phrase title="top_10_best_sharers" version_id="1" version_string="1.0"><![CDATA[Top 10 Best Sharers]]></phrase>
+    <phrase title="top_10_downloaders" version_id="1" version_string="1.0"><![CDATA[Top 10 Downloaders]]></phrase>
+    <phrase title="top_10_most_active_torrents" version_id="1" version_string="1.0"><![CDATA[Top 10 Most Active Torrents]]></phrase>
+    <phrase title="top_10_most_completed_torrents" version_id="1" version_string="1.0"><![CDATA[Top 10 Most Completed Torrents]]></phrase>
+    <phrase title="top_10_most_downloaded_torrents" version_id="1" version_string="1.0"><![CDATA[Top 10 Most Downloaded Torrents]]></phrase>
+    <phrase title="top_10_snatchers" version_id="1" version_string="1.0"><![CDATA[Top 10 Snatchers]]></phrase>
+    <phrase title="top_10_uploaders" version_id="1" version_string="1.0"><![CDATA[Top 10 Uploaders]]></phrase>
+    <phrase title="top_10_worst_sharers" version_id="1" version_string="1.0"><![CDATA[Top 10 Worst Sharers]]></phrase>
+    <phrase title="top_best_sharers" version_id="6" version_string="1.1"><![CDATA[Top Best Sharers]]></phrase>
+    <phrase title="top_completed" version_id="1" version_string="1.0"><![CDATA[Top Completed]]></phrase>
+    <phrase title="top_downloaders" version_id="1" version_string="1.0"><![CDATA[Top Downloaders]]></phrase>
+    <phrase title="top_snatchers" version_id="1" version_string="1.0"><![CDATA[Top Snatchers]]></phrase>
+    <phrase title="top_uploaders" version_id="1" version_string="1.0"><![CDATA[Top Uploaders]]></phrase>
+    <phrase title="top_worst_sharers" version_id="6" version_string="1.1"><![CDATA[Top Worst Sharers]]></phrase>
+    <phrase title="torrent" version_id="1" version_string="1.0"><![CDATA[Torrent]]></phrase>
+    <phrase title="torrents" global_cache="1" version_id="1" version_string="1.0"><![CDATA[Torrents]]></phrase>
+    <phrase title="torrents_are_being_shown_from_all_child_categories" version_id="1" version_string="1.0"><![CDATA[Torrents are being shown from all child categories.]]></phrase>
+    <phrase title="torrent_allowed_in_first_post_only" version_id="1" version_string="1.0"><![CDATA[Torrent upload is allowed only on first post of the thread.]]></phrase>
+    <phrase title="torrent_are_not_allowed_in_this_forum" version_id="1" version_string="1.0"><![CDATA[Torrents are not allowed in this forum]]></phrase>
+    <phrase title="torrent_category" version_id="1" version_string="1.0"><![CDATA[Torrent category]]></phrase>
+    <phrase title="torrent_creation_time" version_id="1" version_string="1.0"><![CDATA[Torrent creation time]]></phrase>
+    <phrase title="torrent_info" version_id="1" version_string="1.0"><![CDATA[Torrent Info]]></phrase>
+    <phrase title="torrent_size" version_id="1" version_string="1.0"><![CDATA[Torrent Size]]></phrase>
+    <phrase title="torrent_stats" version_id="1" version_string="1.0"><![CDATA[Torrent Stats]]></phrase>
+    <phrase title="torrent_tracker_host_is_not_set" version_id="1" version_string="1.0"><![CDATA[Torrent tracker host is not set]]></phrase>
+    <phrase title="torrent_tracker_port_is_not_set" version_id="1" version_string="1.0"><![CDATA[Torrent tracker port is not set]]></phrase>
+    <phrase title="trade" version_id="1" version_string="1.0"><![CDATA[Trade]]></phrase>
+    <phrase title="try_again" version_id="1" version_string="1.0"><![CDATA[Try Again]]></phrase>
+    <phrase title="typ" version_id="1" version_string="1.0"><![CDATA[Type]]></phrase>
+    <phrase title="ul" version_id="1" version_string="1.0"><![CDATA[UL]]></phrase>
+    <phrase title="ul_speed" version_id="1" version_string="1.0"><![CDATA[UL Speed]]></phrase>
+    <phrase title="up" version_id="1" version_string="1.0"><![CDATA[Up]]></phrase>
+    <phrase title="update_log" version_id="1" version_string="1.0"><![CDATA[Update Log]]></phrase>
+    <phrase title="update_log_entry" version_id="1" version_string="1.0"><![CDATA[Update Log Entry]]></phrase>
+    <phrase title="uploaded" version_id="1" version_string="1.0"><![CDATA[Uploaded]]></phrase>
+    <phrase title="upload_credit" version_id="1" version_string="1.0"><![CDATA[Upload Credit]]></phrase>
+    <phrase title="upload_torrent" version_id="1" version_string="1.0"><![CDATA[Upload Torrent]]></phrase>
+    <phrase title="user_has_downloaded_at_least_x_mb" version_id="6" version_string="1.1"><![CDATA[User has downloaded at least X megabytes (MB)]]></phrase>
+    <phrase title="user_has_uploaded_at_least_x_mb" version_id="6" version_string="1.1"><![CDATA[User has uploaded at least X megabytes (MB)]]></phrase>
+    <phrase title="use_this_as_announce_url_for_your_torrent" version_id="4" version_string="1.0"><![CDATA[Use this as Announce URL for your torrent]]></phrase>
+    <phrase title="viewing_torrents" version_id="1" version_string="1.0"><![CDATA[Viewing torrents]]></phrase>
+    <phrase title="wait_time" version_id="1" version_string="1.0"><![CDATA[Wait Time]]></phrase>
+    <phrase title="wait_time_desc" version_id="1" version_string="1.0"><![CDATA[The time the user must wait between the date of the torrent and the download. Value in seconds. The default is 0]]></phrase>
+    <phrase title="with_minimum_1gb_downloaded" version_id="1" version_string="1.0"><![CDATA[with minimum 1 GB downloaded]]></phrase>
+    <phrase title="with_minimum_5_seeders" version_id="1" version_string="1.0"><![CDATA[with minimum 5 seeders]]></phrase>
+    <phrase title="xentorrent_active" version_id="1" version_string="1.0"><![CDATA[Active]]></phrase>
+    <phrase title="xentorrent_tracker_log" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker Log]]></phrase>
+    <phrase title="xentorrent_tracker_log_entry" version_id="1" version_string="1.0"><![CDATA[XenTorrent Tracker Log Entry]]></phrase>
+    <phrase title="xentt_comment" version_id="15" version_string="1.2.1"><![CDATA[Comment]]></phrase>
+    <phrase title="xtt_add_user" version_id="1" version_string="1.0"><![CDATA[Add user to the tracker]]></phrase>
+    <phrase title="xtt_all_categories" version_id="1" version_string="1.0"><![CDATA[All Categories]]></phrase>
+    <phrase title="xtt_choose_category" version_id="1" version_string="1.0"><![CDATA[Choose a Category]]></phrase>
+    <phrase title="xtt_delete_torrent" version_id="1" version_string="1.0"><![CDATA[Remove torrent from the tracker]]></phrase>
+    <phrase title="xtt_delete_torrents" version_id="1" version_string="1.0"><![CDATA[Delete torrents from the tracker]]></phrase>
+    <phrase title="xtt_most_downloaded" version_id="1" version_string="1.0"><![CDATA[Most Downloaded]]></phrase>
+    <phrase title="xtt_remove_user" version_id="1" version_string="1.0"><![CDATA[Remove user from the tracker]]></phrase>
+    <phrase title="xtt_remove_users" version_id="1" version_string="1.0"><![CDATA[Remove users from the tracker]]></phrase>
+    <phrase title="xtt_search_in_categories" version_id="1" version_string="1.0"><![CDATA[Search in Categories]]></phrase>
+    <phrase title="xtt_stats" version_id="1" version_string="1.0"><![CDATA[Get Tracker Stats]]></phrase>
+    <phrase title="xtt_update_torrent" version_id="1" version_string="1.0"><![CDATA[Update torrent]]></phrase>
+    <phrase title="xtt_update_user" version_id="1" version_string="1.0"><![CDATA[Update user information in the tracker]]></phrase>
+    <phrase title="xt_left" version_id="6" version_string="1.1"><![CDATA[Left]]></phrase>
+    <phrase title="x_gb_upload_credit" version_id="1" version_string="1.0"><![CDATA[{gb} GB Upload Credit]]></phrase>
+    <phrase title="x_has_requested_reseed_for_torrent_y_completed" version_id="6" version_string="1.1"><![CDATA[{user} has requested a re-seed for the torrent {title} which you completed on {date}.]]></phrase>
+    <phrase title="x_has_requested_reseed_for_torrent_y_uploaded" version_id="6" version_string="1.1"><![CDATA[{user} has requested a re-seed for the torrent {title} which you uploaded on {date}.]]></phrase>
+    <phrase title="x_torrents" version_id="6" version_string="1.1"><![CDATA[{name}'s Torrents]]></phrase>
+    <phrase title="your_torrents" global_cache="1" version_id="1" version_string="1.0"><![CDATA[Your Torrents]]></phrase>
+    <phrase title="you_dont_have_enough_bonus_points_for_this_trade" version_id="1" version_string="1.0"><![CDATA[You don't have enough bonus points for this trade.]]></phrase>
+    <phrase title="you_have_already_sent_max_number_of_reseed_request_for_the_day" version_id="6" version_string="1.1"><![CDATA[You have already sent maximum number of reseed requests for the day.]]></phrase>
+    <phrase title="you_must_like_to_download_torrent" version_id="5" version_string="1.1"><![CDATA[You must like the thread before you can download this torrent.]]></phrase>
+    <phrase title="you_must_reply_to_download_torrent" version_id="5" version_string="1.1"><![CDATA[You must reply before you can download this torrent.]]></phrase>
+  </phrases>
+  <route_prefixes>
+    <route_type type="admin">
+      <prefix original_prefix="torrents" class="XenTorrentTracker_Route_PrefixAdmin_Torrents" build_link="none"/>
+    </route_type>
+    <route_type type="public">
+      <prefix original_prefix="torrents" class="XenTorrentTracker_Route_Prefix_Torrents" build_link="data_only"/>
+    </route_type>
+  </route_prefixes>
+  <style_properties>
+    <property property_name="seeders" property_type="scalar" definition="1" group_name="color" title="Seeders" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3010" sub_group="xenTorrent"><![CDATA[rgb(56, 147, 20)]]></property>
+    <property property_name="leechers" property_type="scalar" definition="1" group_name="color" title="Leechers" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3020" sub_group="xenTorrent"><![CDATA[rgb(13, 41, 222)]]></property>
+    <property property_name="goodRatio" property_type="scalar" definition="1" group_name="color" title="Good Ratio" description="Color for ratio greater or equal to 1." css_components="" scalar_type="color" scalar_parameters="" display_order="3020" sub_group="xenTorrent"><![CDATA[rgb(0, 153, 255)]]></property>
+    <property property_name="seedBonus" property_type="scalar" definition="1" group_name="color" title="Seed Bonus" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3090" sub_group="xenTorrent"><![CDATA[rgb(249, 188, 109)]]></property>
+    <property property_name="badRatio" property_type="scalar" definition="1" group_name="color" title="Bad Ratio" description="" css_components="text,background,border,layout,extra" scalar_type="color" scalar_parameters="" display_order="3040" sub_group="xenTorrent"><![CDATA[#ff0000]]></property>
+    <property property_name="ratioColor" property_type="scalar" definition="1" group_name="color" title="Ratio Color" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3050" sub_group="xenTorrent"><![CDATA[#990000]]></property>
+    <property property_name="messageShowXenTTStats" property_type="scalar" definition="1" group_name="message" title="Show torrent tracker stats" description="Display the message poster's torrent tracker stats, if specified." css_components="" scalar_type="boolean" scalar_parameters="" display_order="100" sub_group="User Info"><![CDATA[1]]></property>
+    <property property_name="trackerOnline" property_type="scalar" definition="1" group_name="color" title="Tracker Online" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3000" sub_group="xenTorrent"><![CDATA[rgb(72, 136, 12)]]></property>
+    <property property_name="trackerOffline" property_type="scalar" definition="1" group_name="color" title="Tracker Offline" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3001" sub_group="xenTorrent"><![CDATA[rgb(195, 21, 21)]]></property>
+    <property property_name="download" property_type="scalar" definition="1" group_name="color" title="Download" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3091" sub_group="xenTorrent"><![CDATA[rgb(255, 102, 0)]]></property>
+    <property property_name="upload_i" property_type="scalar" definition="1" group_name="color" title="Upload" description="" css_components="" scalar_type="color" scalar_parameters="" display_order="3092" sub_group="xenTorrent"><![CDATA[rgb(0, 128, 87)]]></property>
+  </style_properties>
+  <templates>
+    <template title="alert_thread_reseed" version_id="6" version_string="1.1"><![CDATA[<xen:if is="{$content.user_id} == {$visitor.user_id} || {$extra.action} == 'uploaded'">
+	{xen:phrase x_has_requested_reseed_for_torrent_y_uploaded, 'user={xen:helper username, $user, 'subject'}', 'title=<a href="{xen:link threads, $content}" class="PopupItemLink">{xen:helper threadPrefix, $content}{$content.title}</a>', 'date={xen:date $extra.time}'}
+<xen:else />
+	{xen:phrase x_has_requested_reseed_for_torrent_y_completed, 'user={xen:helper username, $user, 'subject'}', 'title=<a href="{xen:link threads, $content}" class="PopupItemLink">{xen:helper threadPrefix, $content}{$content.title}</a>', 'date={xen:date $extra.time}'}
+</xen:if>]]></template>
+    <template title="xentorrent_attached_torrents.css" version_id="6" version_string="1.1"><![CDATA[.messageContent .attachedTorrent .Tabs a.tabLink {
+	padding-left: 22px;
+	padding-right: 22px;
+	line-height: 22px;
+	height: 22px;
+	font-weight: bold;
+	border-radius: 0px !important;
+	border-top-left-radius: 5px !important;
+	border-top-right-radius: 5px !important;
+}
+
+.messageContent .attachedTorrent .actionLinks {
+	right: 0px;
+	font-size: 11px;
+	top: 7px;
+	position: absolute;
+}
+
+	.messageContent .attachedTorrent .actionLinks a {
+		padding: 3px 0;
+	}
+	
+	.messageContent .attachedTorrent .actionLinks a:hover {
+		text-decoration: none;
+		color: {xen:property primaryLighter};
+	}
+	
+	.messageContent .attachedTorrent .actionLinks a:after {
+		content: "|";
+		margin-left: 3px;
+	}
+	
+	.messageContent .attachedTorrent .actionLinks a:last-child:after {
+		content: "";
+	}
+.attachedTorrent {
+	margin-top: 10px;
+	margin: 0px;
+	overflow: visible;
+}
+	.attachedTorrent .torrentContent {
+		padding: 5px;
+	}
+	
+	.attachedTorrent .subHeading {
+		background: {xen:property primaryLighterStill} url('{xen:property imagePath}/xenforo/gradients/form-button-white-25px.png') repeat-x top;
+		border: 1px solid {xen:property primaryLighterStill};
+		color: {xen:property primaryLight};
+		font-size: 11px;
+		font-family: {xen:property body.font-family};
+	}
+
+.torrentHeader {
+	padding: 0px 10px;
+	margin-bottom: 5px;
+}
+
+	.torrentHeader img {
+		vertical-align: bottom;
+		width: 16px;
+		height: 16px;
+	}
+
+	.torrentHeader .filename {
+		overflow: hidden;
+		max-width: 100%;
+		margin-left: 2px;
+	}
+	
+.torrentInfoHeader {
+	font-weight: bold;
+	text-decoration: underline;
+}
+
+.torrentInfo {
+	margin-top: 10px;
+}
+
+.torrentPanes {
+	margin-bottom: 20px;
+}
+
+	.torrentPanes > li {
+		padding: 0 0 0 10px;
+	}
+
+.completed {
+	font-weight: bold;
+}
+
+.torrentTable {
+	position: relative;
+	zoom: 1;
+	display: table;
+	table-layout: fixed;
+	width: 100%;
+	word-wrap: normal;
+}
+
+.torrentTable .sectionHeaders,
+.torrentTableItem
+{
+	display: table-row; 
+	width: 100%;	
+}
+
+	.torrentTable .sectionHeaders dt,
+	.torrentTable .sectionHeaders dd,
+	.torrentTableItem dt,
+	.torrentTableItem dd
+	{
+		display: table-cell;
+		vertical-align: middle;
+		text-align: center;
+	}
+	
+	.torrentTable .size
+	{
+		width: 15%;
+	}
+
+/* column headers */
+
+.torrentTable .sectionHeaders
+{	
+	{xen:property subHeading}
+	
+	padding: 0;
+}	
+
+	.torrentTable .sectionHeaders span, .torrentTableItem span
+	{
+		display: block;
+		padding: 5px;
+	}
+
+.torrentTableItem dt, 
+.torrentTableItem dd
+{
+	{xen:property primaryContent.background}
+	
+	{xen:property primaryContent.border}
+	
+	font-size: 11px;
+	padding: 0;
+	margin: 3px auto 0;
+}
+	
+.progressGraph {
+	width: 100%; /* width and height are arbitrary, just make sure the #bar styles are changed accordingly */
+	height: 20px;
+	border: 1px solid {xen:property primaryLightest}; 
+	background: {xen:property primaryLightest};
+	position: relative;
+	overflow: hidden;
+}
+
+.progressBar {
+	height: 19px; /* Not 20px because the 1px top-border brings it up to 20px to match #graph */
+	background-color: {xen:property secondaryLight}; 
+	border-top: 1px solid {xen:property secondaryLighter};
+}
+
+.progressBar p { 
+	position: absolute; 
+	text-align: center; 
+	width: 100%; 
+	margin: 0; 
+	line-height: 20px; 
+	height: 20px;
+	overflow: hidden;
+}
+
+.peerList .progress {
+	width: 14%;
+}
+
+.peerList .user, 
+.peerList .agent {
+	width: 12%;
+}
+
+<xen:if is="{xen:property enableResponsive}">
+@media (max-width: 1200px)
+{
+	.Responsive .peerList .timespent, 
+	.Responsive .peerList .announced
+	{
+		display: none;
+	}
+}
+
+@media (max-width:{xen:property maxResponsiveNarrowWidth})
+{
+	.Responsive .torrentTable .size
+	{
+		width: 5%;
+	}
+}
+
+@media (max-width:{xen:property maxResponsiveWideWidth})
+{
+	.Responsive .attachedTorrent
+	{
+		margin-right: 0;
+	}
+	
+	.Responsive .peerList .agent, 
+	.Responsive .peerList .timespent, 
+	.Responsive .peerList .speed,
+	.Responsive .peerList .announced,
+	.Responsive .peerList .active
+	{
+		display: none;
+	}
+	
+	.Responsive .peerList .progress {
+		width: 28%;
+	}
+	
+	.Responsive .peerList .user {
+		width: 24%;
+	}
+	
+	.Responsive .messageContent .attachedTorrent .actionLinks {
+		display: none;
+	}
+}
+
+@media (max-width:{xen:property maxResponsiveMediumWidth})
+{
+	html.Responsive .attachment
+	{
+		width: 100%;
+	}
+	
+	.Responsive .peerList .ratio {
+		display: none;
+	}
+}
+</xen:if>]]></template>
+    <template title="xentorrent_bonus.css" version_id="1" version_string="1.0"><![CDATA[.bonusNote 
+{
+	font-size: 11px;
+	color: {xen:property primaryLight};
+	text-align: center;
+	padding: 5px;
+}
+
+h2 
+{
+	font-size: 18px;
+	font-weight: bold;
+	color: {xen:property contentText};
+}
+
+.tradeButtonContainer 
+{
+	max-width: 120px;
+	margin: 0px auto;
+}
+
+.tradeButton
+{
+	{xen:property signupButton}
+
+	margin: 0;
+	line-height: normal;
+	height: auto;
+}
+
+.tradeDisabled
+{
+	border-color: {xen:property mutedTextColor};
+}
+
+	.tradeButton .inner
+	{
+		{xen:property signupButtonInner}
+
+		padding: 3px 10px;
+	}
+	
+	.tradeButton:hover .inner
+	{
+		{xen:property signupButtonHover}
+	}
+
+	.tradeButton:active
+	{
+		{xen:property signupButtonActive}
+	}
+
+	.tradeDisabled .inner,
+	.tradeDisabled:hover .inner
+	{
+		background-color: {xen:property mutedTextColor};
+		color: white;
+	}
+
+td, th 
+{
+	text-align:center;
+}
+
+th.description, td.description 
+{
+	text-align: left;
+}]]></template>
+    <template title="xentorrent_category_list" version_id="1" version_string="1.0"><![CDATA[<xen:if hascontent="true">
+<div class="secondaryContent categoryList">
+	<h3>{xen:if '{$category}', {$category.title}, {xen:phrase categories}}</h3>
+	<ol>
+	<xen:contentcheck>
+		<xen:if is="{$categoryList.top}">
+			<xen:foreach loop="$categoryList.top" key="$categoryId" value="$_category">
+				<li class="{xen:if '{$categoryId} == {$selectedCategoryId}', selected}">
+					<a href="{xen:link torrents, '', 'category_id={$categoryId}'}" {xen:if $_category.description, 'title="{xen:helper striphtml, $_category.description}" class="Tooltip" data-tipclass="torrentCategoryTooltip"'}>{$_category.title}</a>
+					<span class="count">{$_category.discussion_count}</span>
+				</li>
+			
+				<xen:if is="{$categoryList.{$categoryId}}">
+					<xen:include template="xentorrent_sub_category_list">
+						<xen:map to="$categories" from="$categoryList.{$categoryId}" />
+					</xen:include>
+				</xen:if>
+			</xen:foreach>
+		</xen:if>
+		
+		<xen:if is="{$categoryList.ungrouped}">
+			<li><a>{xen:phrase ungrouped}</a></li>
+			<ol>
+				<xen:foreach loop="$categoryList.ungrouped" value="$_category">
+					<xen:set var="$categoryId">{$_category.node_id}</xen:set>
+					<li class="{xen:if '{$categoryId} == {$selectedCategoryId}', selected}">
+						<a href="{xen:link torrents, '', 'category_id={$categoryId}'}" {xen:if $_category.description, 'title="{xen:helper striphtml, $_category.description}" class="Tooltip" data-tipclass="torrentCategoryTooltip"'}>{$_category.title}</a>
+						<span class="count">{$_category.discussion_count}</span>
+					</li>
+					
+					<xen:if is="{$categoryList.{$categoryId}}">
+						<xen:include template="xentorrent_sub_category_list">
+							<xen:map to="$categories" from="$categoryList.{$categoryId}" />
+						</xen:include>
+					</xen:if>
+				</xen:foreach>
+			</ol>
+		</xen:if>
+	</xen:contentcheck>
+	</ol>
+</div>
+</xen:if>]]></template>
+    <template title="xentorrent_choose_category" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase xtt_choose_category}</xen:title>
+
+<form action="{xen:link 'torrents/upload'}" method="post" class="xenForm formOverlay">
+
+	<dl class="ctrlUnit">
+		<dt><label for="ctrl_upload_category_id">{xen:phrase category}:</label></dt>
+		<dd>
+			<select name="node_id" class="textCtrl" id="ctrl_upload_category_id" autofocus="true">
+				<option value="0">&nbsp;</option>
+				<xen:foreach loop="$categories" key="$categoryId" value="$_category">
+					<option value="{$categoryId}"
+						{xen:if '!{$_category.allow_posting}', 'disabled="disabled"'}
+						>{xen:string repeat, '&nbsp; ', $_category.depth}{$_category.title}</option>
+				</xen:foreach>
+			</select>
+			<p class="explain">{xen:phrase select_category_that_best_describes_your_torrent}</p>
+		</dd>
+	</dl>
+
+	<dl class="ctrlUnit submitUnit">
+		<dt></dt>
+		<dd>
+			<input type="submit" value="{xen:phrase continue}..." accesskey="s" class="button primary" />
+		</dd>
+	</dl>
+
+	<input type="hidden" name="_xfToken" value="{$visitor.csrf_token_page}" />
+</form>]]></template>
+    <template title="xentorrent_common.css" version_id="6" version_string="1.1"><![CDATA[.torrentNavLinks .requestCount 
+{
+	color: white;
+	display: inline-block;
+	height: 16px;
+	line-height: 16px;
+	background: #e03030;
+	padding-left: 6px;
+	padding-right: 6px;
+	
+	text-align: center;
+	box-shadow: 2px 2px 5px rgba(0,0,0, 0.25);
+	font-weight: bold;
+	
+	border-radius: 2px;
+	text-shadow: none;
+}
+
+.trackerStats .activeTorrents 
+{
+	float: right;
+	font-size: 10px;
+	margin-top: 5px;
+}
+
+	.trackerStats .activeTorrents .upload {
+		color: {xen:property upload_i};
+		font-size: 9px;
+	}
+	
+	.trackerStats .activeTorrents .download {
+		color: {xen:property download};
+		font-size: 9px;
+	}
+
+.freeleech 
+{
+	{xen:property titlePrefix}
+
+	{xen:property discussionListPrefix}
+	
+	font-weight: normal;
+	font-size: 11px;
+	border-color: {xen:property secondaryLight};
+	color: {xen:property secondaryMedium};
+	background-color: {xen:property secondaryLighter};
+	vertical-align: bottom;
+}
+
+.strong, strong
+{ 
+	font-weight: bold; 
+}
+
+.seeders 
+{
+	color: {xen:property seeders};
+}
+
+.leechers 
+{
+	color: {xen:property leechers};
+}]]></template>
+    <template title="xentorrent_filter_torrents" version_id="6" version_string="1.1"><![CDATA[<form action="{xen:link torrents/search}" method="post" class="xenForm filterTorrents section AutoValidator" data-optinout="optIn" data-redirect="true" {xen:if '!{$searchform}', 'style="display:none;"', ''}">
+	<div class="searchBlockContent" data-toggle-class="dash">
+		<h2 class="mainStrip">{xen:phrase search_torrents} <a data-target=".filterTorrents .searchBlockContent"  class="fa icon-dummy ToggleTrigger right"></a></h3>
+	
+		<dl class="ctrlUnit">
+			<dt><label for="ctrl_query">{xen:phrase keywords}:</label></dt>
+			<dd>
+				<ul>
+					<li><input type="search" name="query" value="{$search.search_query}" results="0" class="textCtrl" id="ctrl_query" autofocus="true"></li>
+					<li><label for="ctrl_freeleech_only"><input type="checkbox" name="freeleech" id="freeleech_only" value="1"{xen:checked '{$search.freeleech}'} /> {xen:phrase freeleech}</label></li>
+				</ul>
+			</dd>
+		</dl>
+		
+		<dl class="ctrlUnit">
+			<dt><label for="ctrl_nodes">{xen:phrase xtt_search_in_categories}:</label></dt>
+			<dd>
+				<ul>
+					<li><select name="nodes[]" id="ctrl_nodes" size="7" multiple="multiple" class="textCtrl"></li>
+						<option value=""{xen:selected '!{$search.nodes}'}>{xen:phrase xtt_all_categories}</option>
+						{xen:raw $categoryOptions}
+					</select></li>
+				</ul>
+			</dd>
+		</dl>
+		
+		<dl class="ctrlUnit">
+			<dt><label for="ctrl_users">{xen:phrase posted_by_member}:</label></dt>
+			<dd>
+				<ul>
+					<li>
+						<input type="text" name="users" value="{$search.users}" class="textCtrl AutoComplete" id="ctrl_users" />
+						<p class="explain">{xen:phrase separate_names_with_comma}</p>
+					</li>
+				</ul>
+			</dd>
+		</dl>
+		
+		<dl class="ctrlUnit">
+			<dt><label for="ctrl_date">{xen:phrase newer_than}:</label></dt>
+			<dd>
+				<input type="date" name="date" value="{$search.date}" class="textCtrl autoSize" id="ctrl_date" />
+			</dd>
+		</dl>
+		
+		<dl class="ctrlUnit">
+			<dt><label for="ctrl_order">{xen:phrase order_by}:</label></dt>
+			<dd>	
+				<select name="order" id="ctrl_order" class="textCtrl autoSize">
+						<option value="time" {xen:selected "{$search.orderBy} == 'time'"}>{xen:phrase torrent_creation_time}</option>
+						<option value="seeders" {xen:selected "{$search.orderBy} == 'seeders'"}>{xen:phrase number_of_seeders}</option>
+						<option value="size" {xen:selected "{$search.orderBy} == 'size'"}>{xen:phrase torrent_size}</option>
+						<option value="leechers" {xen:selected "{$search.orderBy} == 'leechers'"}>{xen:phrase number_of_leechers}</option>
+						<option value="snatched" {xen:selected "{$search.orderBy} == 'snatched'"}>{xen:phrase number_of_seeders}</option>
+						<option value="replies" {xen:selected "{$search.orderBy} == 'replies'"}>{xen:phrase number_of_replies}</option>
+					
+				</select>
+				
+				<select name="direction" id="ctrl_direction" class="textCtrl autoSize">
+					<option value="desc" {xen:selected "{$search.orderDirection} == 'desc'"}>{xen:phrase descending_order}</option>
+					<option value="asc" {xen:selected "{$search.orderDirection} == 'asc'"}>{xen:phrase ascending_order}</option>
+				</select>
+			</dd>
+		</dl>
+		
+		<div class="sectionFooter">
+			<div class="right">
+				<input type="submit" value="{xen:phrase filter_torrents}" accesskey="s" class="button primary" />
+				<input type="reset" name="reset" value="{xen:phrase reset}" class="button" />
+			</div>
+			
+			<input type="hidden" name="_xfToken" value="{$visitor.csrf_token_page}" />
+			<input type="hidden" name="searchform" value="1" />
+		</div>
+	</div>
+</form>]]></template>
+    <template title="xentorrent_freeleech_request.css" version_id="1" version_string="1.0"><![CDATA[.dataRow .avatar img 
+{
+	width: 36px;
+	height: 36px;
+	display: block;
+} 
+
+.dataRow .avatarContainer {
+        width: 42px;
+}
+
+.dataRow .title {
+	{xen:property discussionListFirstRow}
+	max-width: 100%;
+	word-wrap: break-word;
+}
+
+.dataRow .secondRow {
+	{xen:property discussionListSecondRow}
+	clear: both;
+}
+
+	.dataRow .secondRow .requestDate
+	{
+		float: right;
+		padding-left: 20px;
+	}
+	
+.dataRow .posterCategory
+{
+	float: left;
+}
+
+.dataRow .size {
+        width: 70px;
+        text-align: center;
+}
+
+.dataRow .action {
+        text-align: center;
+}
+
+.dataRow .accept a {
+        background: transparent url('{xen:property imagePath}/xenforo/permissions/allow.png') no-repeat center center !important;
+}]]></template>
+    <template title="xentorrent_freeleech_request_list" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase freeleech_requests}</xen:title>
+
+<xen:topctrl>
+	<xen:if is="{$open}">
+		<a href="{xen:link 'torrents/freeleech-requests', '', 'open=0'}" class="callToAction"><span>{xen:phrase closed_requests}</span></a>
+	<xen:else />
+		<a href="{xen:link 'torrents/freeleech-requests'}" class="callToAction"><span>{xen:phrase active_requests}</span></a>
+	</xen:if>
+</xen:topctrl>
+
+<xen:require css="xentorrent_common.css" />
+<xen:require css="xenforo_data_table.css" />
+<xen:require css="xentorrent_freeleech_request.css" />
+
+<div class="section">
+	<h3 class="textHeading">{xen:if $open, {xen:phrase active_requests}, {xen:phrase closed_requests}}</h3>
+	<table class="dataTable">
+		<tr class="dataRow">
+			<th></th>
+			<th>{xen:phrase torrent}</th>
+			<th class="size">{xen:phrase size}</th>
+			<th class="action" colspan="2">{xen:phrase action}</th>
+		</tr>
+	
+		<xen:if is="{$requests}">
+			<xen:foreach loop="$requests" value="$request">
+				<xen:include template="xentorrent_freeleech_request_list_item" />
+			</xen:foreach>
+		<xen:else />
+			<xen:if is="{$open}">
+				<tr class="dataRow">
+					<td colspan="4">{xen:phrase there_no_active_requests_requiring_your_attention}</td>
+				</tr>
+			</xen:if>
+		</xen:if>
+	</table>
+	
+	<xen:if hascontent="true">
+		<div class="pageNavLinkGroup">
+			<xen:contentcheck>
+			<xen:pagenav link="torrents/freeleech-requests"
+				page="{$page}" perpage="{$perPage}" total="{$total}"
+				linkparams="{$pageNavParams}"
+			/>
+			</xen:contentcheck>
+		</div>
+	</xen:if>
+</div>]]></template>
+    <template title="xentorrent_freeleech_request_list_item" version_id="1" version_string="1.0"><![CDATA[<xen:require css="discussion_list.css" />
+
+<tr class="dataRow">
+	<td class="secondary avatarContainer">
+		<div><xen:avatar user="$request" size="s" img="true" /></div>
+	</td>
+	
+	<td>
+		<div class="titleText">
+			<h3 class="title">
+				<a href="{xen:link threads, $request}">{$request.title}</a>
+			</h3>
+
+			<div class="secondRow">
+				<div class="posterCategory muted">
+					<xen:if is="{$request.username}"><xen:username user="$request" title="{xen:phrase content_creator}" /><xen:else />{xen:phrase guest}</xen:if>,
+					<span class="faint">{xen:phrase category}: <a href="{xen:link forums, $request}">{$request.nodetitle}</a></span>
+				</div>
+				
+				<div class="requestDate faint">
+					<xen:datetime time="$request.date" />
+				</div>
+			</div>
+		</div>
+	</td>
+	
+	
+	<td class="secondary size">{xen:number $request.size, 'size'}</td>
+	
+	<xen:if is="{$open}">
+		<td class="delete accept">
+			<a href="{xen:link torrents/make-freeleech, $request, 'request_id={$request.request_id}'}" title="{xen:phrase accept}">{xen:phrase accept}</a>
+		</td>
+		
+		<td class="delete">
+			<a href="{xen:link torrents/remove-freeleech, $request, 'request_id={$request.request_id}'}" title="{xen:phrase reject}">{xen:phrase reject}</a>
+		</td>
+	<xen:else />
+		<td colspan="2" class="action">
+			<xen:if is="{$request.action} == 'accept'">{xen:phrase accepted}<xen:else />{xen:phrase rejected}</xen:if>
+		</td>
+	</xen:if>
+</li>]]></template>
+    <template title="xentorrent_index" version_id="1" version_string="1.0"><![CDATA[<xen:if is="{$search.search_query}">
+	<xen:title>{xen:phrase search_results_for_query}: {$search.search_query}</xen:title>
+<xen:else />
+	<xen:title>{xen:phrase torrents}</xen:title>
+	<xen:container var="$head.canonical">
+		<link rel="canonical" href="{xen:link 'canonical:torrents', '', "page={xen:if '{$page} > 1', $page, ''}"}" />
+	</xen:container>	
+</xen:if>
+
+<xen:if is="{$category}">
+	<xen:navigation>
+	 	<xen:breadcrumb source="{$categoryBreadcrumbs}" />
+	</xen:navigation>
+</xen:if>
+
+<xen:if is="{$canUploadTorrent}">
+	<xen:topctrl><a href="{xen:link torrents/upload}" class="callToAction OverlayTrigger"><span>{xen:phrase upload_torrent}</span></a></xen:topctrl>
+</xen:if>
+
+<xen:container var="$head.faCss"><link href="styles/xentorrent/style.css" rel="stylesheet"></xen:container>
+<xen:require css="xentorrent_torrent_list.css" />
+<xen:require css="xentorrent_common.css" />
+
+<xen:include template="xentorrent_filter_torrents" />
+
+<div class="torrentListBlock">
+	<div class="torrentListSidebar">
+		<xen:include template="xentorrent_category_list" />
+	
+		<form action="{xen:link torrents/search}" method="post" class="xenForm section">
+			<div class="secondaryContent">
+				<h3>{xen:phrase search_torrents}</h3>				
+				<input type="search" results="0" name="query" placeholder="{xen:phrase search}..." class="textCtrl" />
+				<input type="hidden" name="_xfToken" value="{$visitor.csrf_token_page}" />
+				<xen:comment><input type="hidden" name="category_id" value="{$selectedCategoryId}" /></xen:comment>				
+			</div>
+			
+			<div class="sectionFooter">
+				<label for="ctrl_freeleech"><input type="checkbox" name="freeleech" value="1" id="ctrl_freeleech"> {xen:phrase freeleech}</label>
+				<a href="{xen:link torrents, '', 'searchform=1'}" data-target=".filterTorrents" data-only-if-hidden="1" class="right ToggleTrigger">{xen:phrase advanced_search}</a>
+			</div>
+		</form>
+		
+		<xen:include template="xentorrent_sidebar_tracker_stats">
+			<xen:set var="$hideAnnounceUrl">1</xen:set>
+		</xen:include>
+	</div>
+	
+	<div class="torrentListMain">
+		<div class="torrentList section">
+			<dl class="sectionHeaders">
+				<dd class="torrentCategory"><a><span>{xen:phrase type}</span></a></dd>			
+				<dd class="name"><a><span>{xen:phrase name}</span></a></dd>
+				<dd class="download"><a><span><i class="icon icon-download dimmed Tooltip" title="{xen:phrase download}"></i></span></a></dd>
+				<dd class="comments"><a href="{xen:link torrents, '', '_params={$orderParams.replies}'}"><span><i class="icon icon-comments dimmed Tooltip" title="{xen:phrase replies}"></i> {xen:helper sortArrow, $order, $orderDirection, replies}</span></a></dd>
+				<dd class="size"><a href="{xen:link torrents, '', '_params={$orderParams.size}'}"><span><i class="icon icon-database dimmed Tooltip" title="{xen:phrase size}"></i> {xen:helper sortArrow, $order, $orderDirection, size}</span></a></dd>
+				<dd class="snatched"><a href="{xen:link torrents, '', '_params={$orderParams.snatched}'}"><span><i class="icon icon-drive dimmed Tooltip" title="{xen:phrase snatches}"></i> {xen:helper sortArrow, $order, $orderDirection, snatched}</span></a></dd>
+				<dd class="seeders"><a href="{xen:link torrents, '', '_params={$orderParams.seeders}'}"><span><i class="icon icon-arrow-up dimmed Tooltip" title="{xen:phrase seeders}"></i> {xen:helper sortArrow, $order, $orderDirection, seeders}</span></a></dd>		
+				<dd class="leechers"><a href="{xen:link torrents, '', '_params={$orderParams.leechers}'}"><span><i class="icon icon-arrow-down dimmed Tooltip" title="{xen:phrase leechers}"></i> {xen:helper sortArrow, $order, $orderDirection, leechers}</span></a></dd>
+			</dl>
+			
+			<ol class="torrentListItems">
+				<xen:if is="{$torrents}">
+					<xen:if is="{$category}">
+						<li class="secondaryContent torrentNote" style="font-size:11px;">
+							{xen:phrase torrents_are_being_shown_from_all_child_categories}
+						</li>
+					</xen:if>
+					<xen:foreach loop="$torrents" value="$torrent">
+						<xen:include template="xentorrent_torrent_list_item" />
+					</xen:foreach>
+				<xen:else />
+					<li class="primaryContent">{xen:phrase there_no_torrents_to_display}</li>
+				</xen:if>
+			</ol>
+			
+			<xen:comment>
+			<xen:if is="{$total}">
+				<div class="sectionFooter">
+					<span class="contentSummary">{xen:phrase showing_torrents_x_to_y_of_z, 'start={xen:number $startOffset}', 'end={xen:number $endOffset}', 'total={xen:number $total}'}</span>	
+				</div>
+			</xen:if>
+			</xen:comment>
+		</div>
+		
+		<div class="pageNavLinkGroup">
+			<xen:pagenav link="torrents" 
+				page="{$page}" perpage="{$perPage}" total="{$total}"
+				linkparams="{$pageNavParams}"
+			/>
+		</div>
+	</div>
+</div>
+
+<xen:include template="preview_tooltip" />]]></template>
+    <template title="xentorrent_member_mybonus" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase bonus_points_system}</xen:title>
+<xen:description>{xen:phrase bonus_points_system_desc}</xen:description>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:link 'members', {$visitor}}">{$visitor.username}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="xentorrent_bonus.css" />
+<xen:require css="xenforo_data_table.css" />
+
+<div class="sectionMain" style="max-width:900px;">
+	<table class="dataTable">
+		<caption>{xen:phrase currently_you_have_x_points, 'points={$visitor.seedbonus}'}</caption>
+		<tr class="dataRow">
+			<th class="description">{xen:phrase description}</th>
+			<th>{xen:phrase points_needed}</th>
+			<th>{xen:phrase trade}</th>
+		</tr>
+		<tr class="dataRow">
+			<td colspan="3" class="secondary bonusNote">{xen:phrase for_every_hour_that_you_seed_awarded_1_point}</td>
+		</tr>
+		
+		<xen:foreach loop="$options" key="$points" value="$title">
+		<tr class="dataRow">
+			<td width="65%" class="description">
+				<h2>{xen:phrase x_gb_upload_credit, 'gb={$title}'}</h2>
+				<p class="muted">{xen:phrase bonus_points_redeem_desc}</p>
+			</td>
+					
+			<td class="important">{$points}</td>
+			
+			<td>
+				<div class="tradeButtonContainer">
+					<label class="tradeButton {xen:if '{$points} > {$visitor.seedbonus}', tradeDisabled}">
+						<xen:if is="{$points} > {$visitor.seedbonus}">
+							<div class="inner">{xen:phrase redeem}</div>
+						<xen:else />
+							<a href="{xen:link members/my-bonus, '', 'redeem=1', 'points={$points}'}" class="inner">{xen:phrase redeem}</a>
+						</xen:if>
+					</label>
+				</div>
+			</td>
+		</tr>
+		</xen:foreach>
+	</table>
+</div>]]></template>
+    <template title="xentorrent_member_torrent_list" version_id="6" version_string="1.1"><![CDATA[<xen:title>{xen:phrase bit_torrent}</xen:title>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:link 'members', {$user}}">{$user.username}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:edithint template="xentorrent_member_torrent_list_item" />
+
+<xen:include template="xentorrent_member_torrent_list_header" />
+
+<ul id="memberTorrentListBlock">
+	<li class="active"><xen:include template="xentorrent_member_torrent_list_content" /></li>
+	<li></li>
+	<li></li>
+	<li></li>
+</ul>]]></template>
+    <template title="xentorrent_member_torrent_list_content" version_id="7" version_string="1.1"><![CDATA[<div class="torrentList section sectionMain">
+	<dl class="sectionHeaders">
+		<dd class="torrentCategory"><a><span>{xen:phrase category}</span></a></dd>			
+		<dd class="name"><a><span>{xen:phrase name}</span></a></dd>
+		
+		<xen:if is="{$filter} == 'my'">
+			<dd class="download"><a><span><i class="icon icon-download dimmed Tooltip" title="{xen:phrase download}"></i></span></a></dd>
+			<dd class="comments"><a><span><i class="icon icon-comments dimmed Tooltip" title="{xen:phrase replies}"></i></span></a></dd>
+		</xen:if>
+		
+		<dd class="size"><a><span><i class="icon icon-database dimmed Tooltip" title="{xen:phrase size}"></i></span></a></dd>
+				
+		<dd class="seeders"><a><span><i class="icon icon-arrow-up dimmed Tooltip" title="{xen:phrase seeders}"></i></span></a></dd>
+		<dd class="leechers"><a><span><i class="icon icon-arrow-down dimmed Tooltip" title="{xen:phrase leechers}"></i></span></a></dd>
+	
+		<xen:if is="{$filter} != 'my'">		
+			{xen:if '{$filter} != "seed"', '<dd class="left"><a><span><i class="icon icon-hour-glass dimmed Tooltip" title="{xen:phrase xt_left}"></i></span></a></dd>', ''}	
+			{xen:if '{$filter} == "seed"', '<dd class="timespent"><a><span><i class="icon icon-clock  dimmed Tooltip" title="{xen:phrase timespent}"></i></span></a></dd>', ''}
+			<dd class="up"><a><span><i class="icon icon-upload  dimmed Tooltip" title="{xen:phrase up}"></i></span></a></dd>
+			<dd class="down"><a><span><i class="icon icon-download dimmed Tooltip" title="{xen:phrase down}"></i></span></a></dd>
+		<xen:else />
+			<dd class="snatched"><a><span><i class="icon icon-drive dimmed Tooltip" title="{xen:phrase snatches}"></i></span></a></dd>
+		</xen:if>
+	</dl>
+	
+	<ol class="torrentListItems">
+		<xen:if is="{$torrents}">
+			<xen:foreach loop="$torrents" value="$torrent">
+				<xen:include template="xentorrent_member_torrent_list_item" />
+			</xen:foreach>
+			
+			<xen:if is="{$total}">
+				<div class="sectionFooter">
+					<span class="contentSummary">{xen:phrase showing_torrents_x_to_y_of_z, 'start={xen:number $startOffset}', 'end={xen:number $endOffset}', 'total={xen:number $total}'}</span>	
+				</div>
+			</xen:if>
+		<xen:else />
+			<li class="primaryContent" style="display:block;">{xen:phrase there_no_torrents_to_display}</li>
+		</xen:if>
+	</ol>
+	
+	<xen:if hascontent="true">
+		<div class="pageNavLinkGroup">
+			<xen:contentcheck>
+			<xen:pagenav link="members/torrents" linkdata="{$user}"
+				page="{$page}" perpage="{$perPage}" total="{$total}"
+				linkparams="{$pageNavParams}"
+			/>
+			</xen:contentcheck>
+		</div>
+	</xen:if>
+</div>]]></template>
+    <template title="xentorrent_member_torrent_list_header" version_id="6" version_string="1.1"><![CDATA[<xen:require css="xentorrent_torrent_list.css" />
+<xen:require css="xentorrent_common.css" />
+<xen:require js="js/xentorrent/torrent_list.js" />
+
+<xen:container var="$head.faCss"><link href="styles/xentorrent/style.css" rel="stylesheet"></xen:container>
+
+<ul class="tabs TorrentTabs" data-url="{xen:link members/torrents, $user}" data-panes="#memberTorrentListBlock > li">
+	<li class="active"><a href="{xen:link members/torrents, $user, 'filter=my'}" data-filter="my"><xen:if is="{$user.user_id} == {$visitor.user_id}">{xen:phrase your_torrents}<xen:else />{xen:phrase x_torrents, 'name={$user.username}'}</xen:if></a></li>
+	<li><a href="{xen:link members/torrents, $user, 'filter=inactive'}" data-filter="inactive">{xen:phrase inactive}</a></li>
+	<li><a href="{xen:link members/torrents, $user, 'filter=leech'}" data-filter="leech">{xen:phrase leeching}</a></li>
+	<li><a href="{xen:link members/torrents, $user, 'filter=seed'}" data-filter="seed">{xen:phrase seeding}</a></li>
+</ul>]]></template>
+    <template title="xentorrent_member_torrent_list_item" version_id="6" version_string="1.1"><![CDATA[<li id="torrent-{$torrent.torrent_id}" class="torrentListItem">
+	<div class="listBlock torrentCategory">
+		<xen:if is="{$torrent.torrent_category_image}">
+			<a href="{xen:link forums, $torrent}" title="{$torrent.node_title}">
+				<img src="{$xenOptions.xenTorrentCategoriesImagePath}{$torrent.torrent_category_image}" alt="{$torrent.node_title}" />
+			</a>	
+		<xen:else />
+			<div>	
+				<a href="{xen:link forums, $torrent}" title="{$torrent.node_title}">		
+					<span class="primary">{$torrent.node_title}</span>
+				</a>	
+			</div>
+		</xen:if>
+	</div>
+	
+	<div class="listBlock name">
+		<div class="titleText">
+			<h3 class="title">
+				<a href="{xen:link threads, $torrent}">{xen:helper wrap, $torrent.title, 50}</a>
+				{xen:if {$torrent.freeleech}, '<span class="freeleech Tooltip" title="{xen:phrase freeleech_desc}">{xen:phrase freeleech}</span>', ''}
+			</h3>
+			
+			<xen:if is="{$filter} != 'my'">
+				<div class="secondRow">
+					<div class="lastAnnounced muted">
+						{xen:phrase last_announce}: <xen:datetime time="$torrent.mtime" />
+						<span class="useragent"><i class="icon icon-laptop dimmed Tooltip" 
+							title="{xen:phrase client}: {$torrent.useragent}
+							{xen:phrase ip}: {xen:helper long2ip, $torrent.ipa}"></i></span>
+					</div>
+				</div>
+			<xen:else />
+				<div class="secondRow muted">
+					<xen:datetime time="$torrent.ctime" />
+				</div>
+			</xen:if>
+		</div>
+	</div>
+	
+	<xen:if is="{$filter} == 'my'">
+		<div class="listBlock download">
+			<a href="{xen:link attachments, $torrent}" title="{xen:phrase download}"><img src="styles/xentorrent/torrent.png" alt="{xen:phrase download}" /></a>
+		</div>
+		
+		<div class="listBlock comments">
+			{$torrent.reply_count}
+		</div>
+	</xen:if>
+	
+	<div class="listBlock size">
+		{xen:number $torrent.size, size}
+	</div>
+	
+	<div class="listBlock seeders strong">
+		{$torrent.seeders}
+	</div>
+	
+	<div class="listBlock leechers strong">
+		{$torrent.leechers}
+	</div>
+	
+	<xen:if is="{$filter} != 'my'">	
+		<xen:if is="{$filter} != 'seed'">	
+			<div class="listBlock left">
+				{xen:number $torrent.left, size}
+			</div>
+		<xen:else />		
+			<div class="listBlock timespent">
+				<xen:if is="{$torrent.seedtime} < 3600">
+					{xen:number {xen:calc '{$torrent.seedtime} / 60'}, 2} m
+				<xen:elseif is="{$torrent.seedtime} < 86400" />
+					{xen:number {xen:calc '{$torrent.seedtime} / 3600'}, 2} h
+				<xen:else />
+					{xen:number {xen:calc '{$torrent.seedtime} / 86400'}, 0} d
+				</xen:if>
+			</div>
+		</xen:if>
+		
+		<div class="listBlock up">
+			{xen:number $torrent.uploaded, size}
+			<xen:if is="{$torrent.up_rate}">
+				<div class="secondRow muted">
+					@ {xen:number $torrent.up_rate, size}/s
+				</div>
+			</xen:if>
+		</div>
+		
+		<div class="listBlock down">
+			{xen:number $torrent.downloaded, size}
+			<xen:if is="{$torrent.down_rate}">
+				<div class="secondRow muted">
+					@ {xen:number $torrent.down_rate, size}/s
+				</div>
+			</xen:if>
+		</div>
+	<xen:else />
+		<div class="listBlock snatched">
+			{$torrent.completed}
+		</div>
+	</xen:if>
+</li>]]></template>
+    <template title="xentorrent_member_view_tabs_content" version_id="6" version_string="1.1"><![CDATA[<xen:if is="{$visitor.user_id} == {$user.user_id} || {$visitor.permissions.general.editBasicProfile}">
+	<li id="bitTorrent" class="profileContent">
+		<xen:include template="xentorrent_member_torrent_list_header" />
+		
+		<ul id="memberTorrentListBlock">
+			<li><div class="section">{xen:phrase loading}...</div></li>
+			<li><div class="section">{xen:phrase loading}...</div></li>
+			<li><div class="section">{xen:phrase loading}...</div></li>
+			<li><div class="section">{xen:phrase loading}...</div></li>
+		</ul>
+	</li>
+</xen:if>]]></template>
+    <template title="xentorrent_member_view_tabs_heading" version_id="6" version_string="1.1"><![CDATA[<xen:if is="{$visitor.user_id} == {$user.user_id} || {$visitor.permissions.general.editBasicProfile}">
+	<li><a href="{xen:link members/torrents, $user}" class="ClickProxy" data-allowdefault="true" rel=".TorrentTabs li.active a">{xen:phrase bit_torrent}</a></li>
+</xen:if>]]></template>
+    <template title="xentorrent_message_user_info_extra" version_id="1" version_string="1.0"><![CDATA[<xen:if is="{xen:property messageShowXenTTStats} AND {$user.user_id}">
+	<dl class="pairsJustified">
+		<dt>{xen:phrase uploaded}:</dt>
+		<dd>{xen:number $user.uploaded, size}</dd>
+		
+		<dt>{xen:phrase downloaded}:</dt>
+		<dd>{xen:number $user.downloaded, size}</dd>
+		
+		<xen:set var="$user.ratio">{xen:if '{$user.downloaded} > 0', {xen:number {xen:calc '{$user.uploaded} / {$user.downloaded}'}, 2}, '-'}</xen:set>
+		
+		<dt>{xen:phrase ratio}:</dt>
+		<dd style="color:{xen:helper ratiocolor, {$user.ratio}};">{$user.ratio}</dd>
+	</dl>
+</xen:if>]]></template>
+    <template title="xentorrent_navlinks" version_id="1" version_string="1.0"><![CDATA[<xen:require css="xentorrent_common.css" />
+<ul class="secondaryContent blockLinksList torrentNavLinks">
+	<li>
+		<a href="{xen:link torrents/top}">{xen:phrase top_10}</a></li>
+	</li>
+	
+	<xen:if is="{$visitor.user_id}">
+		<li><a href="{xen:link members/torrents, $visitor}">{xen:phrase your_torrents}</a></li>
+		<li><a href="{xen:link members/reset-pass-key}" class="OverlayTrigger">{xen:phrase reset_passkey}</a></li>
+		<li><a href="{xen:link members/my-bonus}">{xen:phrase my_bonus}</a></li>
+		<xen:if is="{$visitor.canAcceptFreeleechRequest}">
+			<li><a href="{xen:link torrents/freeleech-requests}">{xen:phrase freeleech_requests} {xen:if $openFreeleechRequests, '<strong class="requestCount">{$openFreeleechRequests}</strong>', ''}</a></li>
+		</xen:if>
+	</xen:if>
+</ul>]]></template>
+    <template title="xentorrent_post_attachment" version_id="15" version_string="1.2.1"><![CDATA[<xen:require css="xentorrent_attached_torrents.css" />
+<xen:require css="xentorrent_common.css" />
+
+<div class="attachedTorrent section">
+	<div class="torrentContent">
+		<div class="torrentHeader pairsInline">
+			<dl>
+				<dt></dt>
+				<dd><img src="styles/xentorrent/torrent.png" border="0" /><a class="filename" href="{xen:link attachments, $torrent}" target="_blank">{$torrent.filename}</a></dd>
+			</dl>
+			<dl>
+				<dt></dt> 
+				<dd class="muted">({xen:number $torrent.file_size, size}, 
+					{xen:number $torrent.view_count} {xen:phrase views},
+					{xen:phrase size}: {xen:number $torrent.size, size}, 
+					{xen:phrase seeders}: <span class="seeders">{$torrent.seeders}</span>, 
+					{xen:phrase leechers}: <span class="leechers">{$torrent.leechers}</span>,
+					{xen:phrase completed}: <span class="completed">{$torrent.completed}</span>)
+					<xen:if is="{$torrent.freeleech}"><strong class="freeleech Tooltip" title="{xen:phrase freeleech_desc}">{xen:phrase freeleech}</strong></xen:if>
+				</dd>
+			</dl>
+		</div>
+						
+		<div style="position:relative;">
+			<div class="actionLinks">
+				<xen:if is="{$torrent.freeleech}">
+					<xen:if is="{$visitor.canAcceptFreeleechRequest}">
+						<a href="{xen:link torrents/remove-freeleech, $torrent}">{xen:phrase remove_freeleech}</a>
+					</xen:if>
+				<xen:else />
+					<xen:if is="{$visitor.canAcceptFreeleechRequest}">
+						<a href="{xen:link torrents/make-freeleech, $torrent}">{xen:phrase make_freeleech}</a>
+					<xen:elseif is="{$post.canRequestForFreeleech}" />
+						<a href="{xen:link torrents/request-freeleech, $torrent}" title="{xen:phrase request_freeleech_desc}"class="Tooltip">{xen:phrase request_freeleech}</a>
+					</xen:if>
+				</xen:if>
+							
+				<xen:if is="{$torrent.canAskForReseed}">
+					<a href="{xen:link torrents/request-reseed, $torrent}" class="OverlayTrigger">{xen:phrase request_reseed}</a>
+				</xen:if>
+			</div>
+			
+			<div>
+				<ul class="tabs Tabs" data-panes="#torrentPanes > li">
+					<li class="active"><a class="tabLink">{xen:phrase torrent_info}</a></li>
+					<li><a class="tabLink" href="{xen:link torrents/files, $torrent}">{xen:phrase files} ({$torrent.number_files})</a></li>
+					{xen:if $torrent.viewPeerList, '<li><a class="tabLink" href="{xen:link torrents/peer-list, $torrent}">{xen:phrase peer_list}</a></li>', ''}
+					{xen:if $torrent.viewSnatchList, '<li><a class="tabLink" href="{xen:link torrents/snatchers, $torrent}">{xen:phrase snatchers_list}</a></li>', ''}
+				</ul>
+			</div>
+		</div>
+		
+		<ul id="torrentPanes" class="torrentPanes">
+			<li>
+			<dl class="pairsColumns">
+				<dd>
+					<div class="torrentInfo">
+						<div class="torrentInfoHeader">{xen:phrase created_with}:</div>
+						<xen:if is="{$torrent.other_details.created}">
+							{xen:string censor, {$torrent.other_details.created}}
+						<xen:else />
+							{xen:phrase n_a}
+						</xen:if>
+					</div>
+				</dd>
+				
+				<dd>
+					<div class="torrentInfo">
+						<div class="torrentInfoHeader">{xen:phrase xentt_comment}:</div>
+						<xen:if is="{$torrent.other_details.comment}">
+							{xen:string censor, {$torrent.other_details.comment}}
+						<xen:else />
+							{xen:phrase no_comment_for_this_torrent}
+						</xen:if>
+					</div>
+				</dd>
+				
+				<dd>
+					<div class="torrentInfo">
+						<div class="torrentInfoHeader">{xen:phrase peers}:</div>
+						{$torrent.seeders} {xen:string strtolower, '{xen:phrase seeders}'} + {$torrent.leechers} {xen:string strtolower, '{xen:phrase leechers}'} = 
+							{xen:calc '{$torrent.seeders} + {$torrent.leechers}'} {xen:string strtolower, '{xen:phrase peers}'}
+					</div>
+				</dd>
+				
+				<dd>
+					<div class="torrentInfo">
+						<div class="torrentInfoHeader">{xen:phrase last_announce}:</div>
+						<xen:if is="{$torrent.mtime}">
+							<xen:datetime time="{$torrent.mtime}" />
+						<xen:else />
+							{xen:phrase n_a}
+						</xen:if>
+					</div>
+				</dd>
+			</dl>
+			</li>
+			
+			<li data-loadurl="{xen:link torrents/files, $torrent}"><div class="section">{xen:phrase loading}...</div></li>
+			{xen:if $torrent.viewPeerList, '<li data-loadurl="{xen:link torrents/peer-list, $torrent}"><div class="section">{xen:phrase loading}...</div></li>'}
+			{xen:if $torrent.viewSnatchList, '<li data-loadurl="{xen:link torrents/snatchers, $torrent}"><div class="section">{xen:phrase loading}...</div></li>'}
+		</ul>
+	</div>
+</div>]]></template>
+    <template title="xentorrent_post_torrent_file_list" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase files}</xen:title>
+
+<xen:navigation>
+	<xen:breadcrumb href="{xen:link 'threads', {$torrent}}">{$torrent.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="xentorrent_attached_torrents.css" />
+
+<div class="torrentTable">
+	<dl class="sectionHeaders">
+		<dt class="size"><span>{xen:phrase size}</span></dt>
+		<dd><span>{xen:phrase filename}</span></dd>
+	</dl>
+	
+	<xen:if is="{$torrent.other_details.files}">
+		<xen:foreach loop="$torrent.other_details.files" key="$name" value="$size">
+			<dl class="torrentTableItem">
+				<dt class="size"><span>{xen:number $size, size}</span></dt>
+				<dd><span>{$name}</span></dd>
+			</dl>
+		</xen:foreach>
+	</xen:if>
+</div>]]></template>
+    <template title="xentorrent_post_torrent_peer_list" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase peer_list}</xen:title>
+<xen:navigation>
+	<xen:breadcrumb href="{xen:link 'threads', {$torrent}}">{$torrent.title}</xen:breadcrumb>
+</xen:navigation>
+
+<xen:require css="xentorrent_attached_torrents.css" />
+
+<div class="torrentTable peerList">
+	<dl class="sectionHeaders">
+		<dt class="user"><span>{xen:phrase user}</span></dt>
+		<dd class="active"><span>{xen:phrase xentorrent_active}</span></dd>
+		<dd class="timespent"><span>{xen:phrase timespent}</span></dd>
+		<dd><span>{xen:phrase ul}</span></dd>
+		<dd><span>{xen:phrase dl}</span></dd>
+		<dd class="ratio"><span>{xen:phrase ratio}</span></dd>
+		<dd class="progress"><span>{xen:phrase progress}</span></dd>
+		<dd class="speed"><span>{xen:phrase ul_speed}</span></dd>
+		<dd class="speed"><span>{xen:phrase dl_speed}</span></dd>
+		<dd class="agent"><span>{xen:phrase agent}</span></dd>
+	</dl>
+	
+	<xen:foreach loop="$peers" value="$peer">
+		<xen:set var="$peer.ratio">{xen:if '{$peer.downloaded} > 0', {xen:number {xen:calc '{$peer.uploaded} / {$peer.downloaded}'}, 2}, '-'}</xen:set>
+		
+		<xen:if is="{$peer.completed} OR {$peer.left} == 0">
+			<xen:set var="$progress">100</xen:set>
+		<xen:elseif is="{$peer.downloaded} == 0" />
+			<xen:set var="$progress">0</xen:set>
+		<xen:else />
+			<xen:set var="$progress">{xen:number {xen:calc '(({$torrent.size} - {$peer.left}) / {$torrent.size}) * 100'}}</xen:set>
+		</xen:if>
+		
+		<dl class="torrentTableItem">
+			<dt class="user"><span><xen:username user="$peer" title="{$peer.username}" /></span></dt>
+			<dd class="active">
+				{xen:if $peer.active, '<span style="color: green;">{xen:phrase yes}', 
+				'<span style="color: red;">{xen:phrase no}'}
+			</dd>
+			
+			<dd class="timespent"><span>
+				<xen:set var="$peer.timespent">{xen:calc '{$peer.seedtime} + {$peer.leechtime}'}</xen:set>
+				<xen:if is="{$peer.timespent} < 3600">
+					{xen:number {xen:calc '{$peer.timespent} / 60'}} m
+				<xen:elseif is="{$peer.timespent} < 86400" />
+					{xen:number {xen:calc '{$peer.timespent} / 3600'}, 1} h
+				<xen:else />
+					{xen:number {xen:calc '{$peer.timespent} / 86400'}} d
+				</xen:if>
+			</span></dd>
+			
+			<dd><span>{xen:number $peer.uploaded, size}</span></dd>
+			<dd><span>{xen:number $peer.downloaded, size}</span></dd>
+			
+			<dd class="ratio" style="color:{xen:helper ratiocolor, {$peer.ratio}};">{$peer.ratio}</dd>
+			<dd class="progress">
+				<span>
+					<div class="progressGraph">
+						<div class="progressBar" style="width:{$progress}%;">
+							<p>{$progress}% {xen:phrase complete}</p>
+						</div>
+					</div>
+				</span>
+			</dd>
+			<dd class="speed"><span>{xen:number $peer.up_rate, size}/s</span></dd>
+			<dd class="speed"><span>{xen:number $peer.down_rate, size}/s</span></dd>
+			<dd class="agent"><span>{$peer.useragent}</span></dd>
+		</dl>
+	</xen:foreach>
+</div>]]></template>
+    <template title="xentorrent_post_torrent_snatchers" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase snatchers_list}</xen:title>
+<xen:navigation>
+	<xen:breadcrumb href="{xen:link 'threads', {$torrent}}">{$torrent.title}</xen:breadcrumb>
+</xen:navigation>
+<xen:description>{xen:phrase list_of_users_reported_a_snatch_to_tracker}</xen:description>
+
+<xen:require css="xentorrent_attached_torrents.css" />
+
+<div class="torrentTable snatchers">
+	<dl class="sectionHeaders">
+		<dt class="user"><span>{xen:phrase user}</span></dt>
+		<dd><span>{xen:phrase time}</span></dd>
+		<xen:if is="{$viewIps}"><dd><span>{xen:phrase ip}</span></dd></xen:if>
+	</dl>
+	
+	<xen:foreach loop="$peers" value="$peer">
+		<dl class="torrentTableItem">
+			<dt class="user"><span><xen:username user="$peer" title="{$peer.username}" /></span></dt>			
+			<dd><span>{xen:datetime $peer.mtime}</span></dd>
+			<xen:if is="{$viewIps}"><dd><span>{xen:helper long2ip, $peer.ipa}</span></dd></xen:if>
+		</dl>
+	</xen:foreach>
+</div>]]></template>
+    <template title="xentorrent_reset_pass_key" version_id="1" version_string="1.0"><![CDATA[<xen:title>{xen:phrase reset_passkey}</xen:title>
+
+<form action="{xen:link members/reset-pass-key}" method="post" class="xenForm AutoValidator formOverlay">
+	<p class="muted">{xen:phrase reset_passkey_desc}</p>
+
+	<dl class="ctrlUnit submitUnit">
+		<dt></dt>
+		<dd>
+			<input type="submit" value="{xen:phrase reset}" class="button primary" />
+		</dd>
+	</dl>
+
+	<input type="hidden" name="_xfToken" value="{$visitor.csrf_token_page}" />
+	<input type="hidden" name="_xfConfirm" value="1" />
+</form>]]></template>
+    <template title="xentorrent_sidebar_my_tracker_stats" version_id="6" version_string="1.1"><![CDATA[<xen:container var="$head.faCss"><link href="styles/xentorrent/style.css" rel="stylesheet"></xen:container>
+<xen:require css="xentorrent_common.css" />
+
+<div class="section trackerStats">
+	<div class="secondaryContent statsList">
+		<h3>{xen:phrase my_bittorrent_stats} 
+			<span class="activeTorrents">
+				<i class="icon icon-arrow-up upload"></i> {$visitor.active_torrent_up} &nbsp;<i class="icon icon-arrow-down download"></i> {$visitor.active_torrent_down}
+			</span>
+		</h3>
+		<div class="pairsJustified">
+			<dl><dt>{xen:phrase uploaded}:</dt> <dd>{xen:number $visitor.uploaded, size}</dd></dl>
+			<dl><dt>{xen:phrase downloaded}:</dt> <dd>{xen:number $visitor.downloaded, size}</dd></dl>
+			<dl><dt>{xen:phrase ratio}:</dt> <dd style="color:{xen:helper ratiocolor, $visitor.ratio}">{$visitor.ratio}</dd></dl>
+			<dl><dt>{xen:phrase bonus_points}:</dt> <dd><a href="{xen:link members/my-bonus}" style="font-weight: bold;color:{xen:property seedBonus};">{$visitor.seedbonus}</a></dd></dl>
+		</div>
+	</div>
+</div>]]></template>
+    <template title="xentorrent_sidebar_tracker_stats" version_id="1" version_string="1.0"><![CDATA[<div class="section trackerStats">
+	<div class="secondaryContent">
+		<h3>{xen:phrase bittorrent_tracker_stats}</h3>
+		<div class="pairsJustified">
+			<dl><dt>{xen:phrase seeders}:</dt> <dd style="color:{xen:property seeders};">{xen:if {$xenTTStats.peers.seeding}, {$xenTTStats.peers.seeding}, 0}</dd></dl>
+			<dl><dt>{xen:phrase leechers}:</dt> <dd style="color:{xen:property leechers};">{xen:if {$xenTTStats.peers.leeching}, {$xenTTStats.peers.leeching}, 0}</dd></dl>
+			<dl><dt>{xen:phrase peers}:</dt> <dd style="color:{xen:property leechers};">{xen:calc '{$xenTTStats.peers.seeding} + {$xenTTStats.peers.leeching}'}</dd></dl>
+			<dl><dt>{xen:phrase snatches}:</dt> <dd>{xen:if {$xenTTStats.snatches}, {$xenTTStats.snatches}, 0}</dd></dl>
+			<dl><dt>{xen:phrase torrents}:</dt> <dd>{xen:if {$xenTTStats.torrents}, {$xenTTStats.torrents}, 0}</dd></dl>
+			
+		</div>
+	</div>
+	
+	<xen:if is="{$hideAnnounceUrl} == null && {$xenOptions.xenTorrentTracker.host} && {$xenOptions.xenTorrentTracker.port}">
+		<div class="sectionFooter" style="color:{xen:if {$xenTTStats.online}, {xen:property trackerOnline}, '{xen:property trackerOffline}'};">
+			http://{$xenOptions.xenTorrentTracker.host}:{$xenOptions.xenTorrentTracker.port}/announce
+		</div>
+	</xen:if>
+</div>]]></template>
+    <template title="xentorrent_sub_category_list" version_id="1" version_string="1.0"><![CDATA[<ol>
+	<xen:foreach loop="$categories" key="$categoryId" value="$_category">
+		<li class="{xen:if '{$_category.node_id} == {$selectedCategoryId}', selected}">
+			<a href="{xen:link torrents, '', 'category_id={$_category.node_id}'}" {xen:if $_category.description, 'title="{xen:helper striphtml, $_category.description}" class="Tooltip" data-tipclass="torrentCategoryTooltip"'}>{$_category.title}</a>
+			<span class="count">{$_category.discussion_count}</span>
+		</li>
+	</xen:foreach>
+</ol>]]></template>
+    <template title="xentorrent_thread_create" version_id="15" version_string="1.2.1"><![CDATA[<xen:if is="{$forum.is_torrent_category} AND {$xenOptions.xenTorrentTracker.host} && {$xenOptions.xenTorrentTracker.port}">
+	<style type="text/css">
+	.announceUrl {
+		font-size: 12px;
+		padding: 5px;
+		border: 1px solid {xen:property primaryLighter};
+	}
+	</style>
+	
+	<dl class="ctrlUnit fullWidth surplusLabel">
+		<dt></dt>
+		<dd>
+			<div class="announceUrl secondaryContent">
+				<div>{xen:phrase use_this_as_announce_url_for_your_torrent}: <b>http://{$xenOptions.xenTorrentTracker.host}:{$xenOptions.xenTorrentTracker.port}/announce</b></div>
+			</div>
+		</dd>
+	</dl>
+</xen:if>]]></template>
+    <template title="xentorrent_thread_list.css" version_id="6" version_string="1.1"><![CDATA[.torrentStats {
+	float: right;
+}
+
+	.torrentStats .seeders {
+		color: {xen:property seeders};
+		font-weight: bold;
+	}
+	
+	.torrentStats .leechers {
+		color: {xen:property leechers};
+		font-weight: bold;
+	}
+
+
+<xen:if is="{xen:property enableResponsive}">
+@media (max-width:{xen:property maxResponsiveWideWidth})
+{
+	.Responsive .torrentStats
+	{
+		float: left;
+	}
+}
+</xen:if>]]></template>
+    <template title="xentorrent_thread_list_item" version_id="7" version_string="1.1"><![CDATA[<xen:if is="{$thread.torrent_id}">
+	<xen:require css="xentorrent_thread_list.css" />
+	
+	<div class="torrentStats muted">
+		<b>{xen:phrase torrent_stats}:</b>
+		<b style="color:{xen:property dimmedTextColor};">{xen:number $thread.torrent_size, size}</b>,
+		<span class="seeders">{$thread.seeders}</span> {xen:string strtolower, {xen:phrase seeders}}, 
+		<span class="leechers">{$thread.leechers}</span> {xen:string strtolower, {xen:phrase leechers}}, 
+		{xen:string strtolower, {xen:phrase completed}} <b>{$thread.completed}</b> {xen:phrase times}.
+	</div>
+</xen:if>]]></template>
+    <template title="xentorrent_top" version_id="6" version_string="1.1"><![CDATA[<xen:title>{$title}</xen:title>
+<xen:description>{$description}</xen:description>
+
+<xen:require css="xentorrent_top.css" />
+<xen:edithint template="xenforo_member_list_item.css" />
+
+<div class="topTapHeadings">
+	<ol class="tabs">
+		<li {xen:if "{$type} == 'user'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=user'}">{xen:phrase users}</a></li>
+		<li  {xen:if "{$type} == 'torrent'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=torrent'}">{xen:phrase torrents}</a></li>
+	</ol>
+	
+	<ul class="typeFilter tabs">
+		<xen:if is="{$type} == 'user'">
+			<li {xen:if "{$subtype} == 'uploaders'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=user', 'subtype=uploaders'}">{xen:phrase top_uploaders}</a><li>
+			<li {xen:if "{$subtype} == 'downloaders'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=user', 'subtype=downloaders'}">{xen:phrase top_downloaders}</a></li>
+			<li {xen:if "{$subtype} == 'snatchers'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=user', 'subtype=snatchers'}">{xen:phrase top_snatchers}</a></li>
+			<li {xen:if "{$subtype} == 'bsharers'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=user', 'subtype=bsharers'}">{xen:phrase top_best_sharers}</a></li>
+			<li {xen:if "{$subtype} == 'wsharers'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=user', 'subtype=wsharers'}">{xen:phrase top_worst_sharers}</a></li>
+		<xen:else />
+			<li {xen:if "{$subtype} == 'active'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=torrent', 'subtype=active'}">{xen:phrase most_active}</a><li>
+			<li {xen:if "{$subtype} == 'downloaded'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=torrent', 'subtype=downloaded'}">{xen:phrase xtt_most_downloaded}</a><li>
+			<li {xen:if "{$subtype} == 'completed'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=torrent', 'subtype=completed'}">{xen:phrase most_completed}</a><li>
+			<li {xen:if "{$subtype} == 'seeded'", 'class="active"'}><a href="{xen:link torrents/top, '', 'type=torrent', 'subtype=seeded'}">{xen:phrase best_seeded}</a><li>
+		</xen:if>
+	</ul>
+</div>
+
+<xen:if is="{$type} == 'user'">
+	<div class="section">
+		<ol>
+		<xen:foreach loop="$items" value="$user">
+			<xen:include template="member_list_item">
+				<xen:set var="$extraTemplate">
+					<span style="font-size: 32px" class="dimmed">{$user.item_count}</span> <span class="faint">{$user.item_title}</span>
+				</xen:set>
+			</xen:include>
+		</xen:foreach>
+		</ol>
+	</div>
+<xen:else />
+	<div class="section">
+		<ol>
+			<xen:foreach loop="$items" value="$torrent">
+				<xen:set var="$extraTemplate">
+					<span style="font-size: 32px" class="dimmed">{$torrent.item_count}</span> <span class="faint">{$torrent.item_title}</span>
+				</xen:set>
+				
+				<li class="primaryContent torrentListItem">
+					<xen:avatar user="$torrent" size="s" class="{xen:if $noOverlay, 'NoOverlay'}" />
+					<div class="extra">{xen:raw $extraTemplate}</div>
+					<div class="torrent">
+						<h3 class="title"><a href="{xen:link threads, $torrent}">{$torrent.title}</a></h3>
+						<div class="torrentInfo">
+							<div class="userBlurb dimmed">{xen:phrase posted_by} <a href="{xen:link members, $torrent}" class="username">{$torrent.username}</a></div>
+							<dl class="torrentStats pairsInline">
+								<dt>{xen:phrase seeders}:</dt> <dd class="seeders">{$torrent.seeders}</dd>
+								<dt>{xen:phrase leechers}:</dt> <dd class="leechers">{$torrent.leechers}</dd>
+								<dt>{xen:phrase snatches}:</dt> <dd>{$torrent.completed}</dd>
+							</dl>
+						</div>
+					</div>
+				</li>
+			</xen:foreach>
+		</ol>
+	</div>
+</xen:if>
+
+<div class="sectionFooter">{xen:phrase stats_are_updated_weekly}.</div>]]></template>
+    <template title="xentorrent_top.css" version_id="1" version_string="1.0"><![CDATA[.topTapHeadings {
+	position: relative;
+	zoom: 1;
+	clear: left;
+}
+	.topTabHeadings .tabs {
+		padding-left: 10px;
+		margin-bottom: 20px;
+	}
+	
+	.topTapHeadings .typeFilter {
+		position: absolute;
+		zoom: 1;
+		right: 10px;
+		top: 0;
+		width: auto;
+		border-bottom: none;
+		background: none;
+		margin: 0px;
+	}
+	
+.torrentListItem
+{
+	{xen:property memberListItem}
+}
+
+	.torrentListItem .avatar,
+	.torrentListItem .icon
+	{
+		{xen:property memberListItemAvatar}
+	}
+
+	.torrentListItem .extra
+	{
+		{xen:property memberListItemExtra}
+	}
+	
+		.torrentListItem .extra .DateTime
+		{
+			display: block;
+		}
+	
+		.torrentListItem .extra .bigNumber
+		{
+			font-size: 250%;
+			color: {xen:property mutedTextColor};
+		}
+	
+	.torrentListItem .torrent
+	{
+		{xen:property memberListItemMember}
+	}
+	
+	.torrentListItem h3.title
+	{
+		{xen:property memberListItemUsername}
+	}
+	
+	.torrentListItem .torrentInfo
+	{
+		{xen:property memberListItemUserInfo}
+	}
+	
+		.torrentListItem .userBlurb
+		{
+			font-weight: bold;
+		}
+
+		.torrentListItem .torrentStats dt,
+		.torrentListItem .torrentStats dd
+		{
+			white-space: nowrap;
+		}
+		
+<xen:if is="{xen:property enableResponsive}">
+@media (max-width:{xen:property maxResponsiveWideWidth})
+{	
+	.topTapHeadings .typeFilter {
+		position: static;
+		width: 100%;
+		margin-bottom: 20px;
+		margin-top: 5px;
+		{xen:property secondaryContent.background};
+		border-bottom: 1px solid {xen:property primaryLighter};
+	}
+}
+</xen:if>]]></template>
+    <template title="xentorrent_torrent_list.css" version_id="1" version_string="1.0"><![CDATA[.icon {
+	font-size: 20px;
+	width: 20px;
+	display: inline-block;
+	text-align: center;
+}
+
+.torrentNote {
+	font-size: 11px;
+	padding: 5px;
+	color: {xen:property primaryLight};
+	text-align: center;
+}
+
+.filterTorrents {
+	overflow: hidden;
+	max-width: 100%;
+}
+
+	.filterTorrents .right {
+		float: right;
+	}
+		
+	.filterTorrents .searchBlockContent.dash dl,
+	.filterTorrents .searchBlockContent.dash .sectionFooter {
+		display: none;
+	}
+	
+	.filterTorrents .ctrlUnit dt {
+		width: 25%;
+	}
+	
+	.filterTorrents .ctrlUnit dd {
+		width: 68%;
+	}
+	
+	.filterTorrents .mainStrip {
+		{xen:property subHeading}
+		font-size: 14px;
+		
+	}
+		.filterTorrents .mainStrip a {
+			cursor: pointer;
+		}
+		
+		.searchBlockContent .mainStrip a:before {
+			content: "\f0ca";
+		}
+		
+		.searchBlockContent.dash .mainStrip a:before {
+			content: "\f05d";
+		}
+
+.TorrentTabs li {
+	float: right !important;
+}
+
+.torrentCategoryTooltip
+{
+	max-width: 350px;
+}
+
+.torrentListMain
+{
+	margin-left: 230px;
+}
+
+/* TorrentList Sidebar */
+
+.torrentListSidebar
+{
+	float: left;
+	width: 220px;
+}
+
+	.torrentListSidebar .trackerStats 
+	{
+		font-size: 11px;
+	}
+	
+	.torrentListSidebar .section
+	{
+		margin: 10px auto;
+	}
+	 
+		.torrentListSidebar .secondaryContent .footnote,
+		.torrentListSidebar .secondaryContent .minorHeading
+		{
+			{xen:property sidebarBlockFootnote}
+		}
+		
+			.torrentListSidebar .secondaryContent .minorHeading a
+			{
+				color: {xen:property sidebarBlockFootnote.color};
+			}
+
+	.torrentListSidebar h3
+	{
+		{xen:property sidebarBlockHeading}
+	}
+	
+	.torrentListSidebar .categoryList {
+		margin-bottom: 10px;
+	}
+
+		.torrentListSidebar .categoryList li
+		{
+			padding: 2px 0 3px;
+			overflow: hidden; zoom: 1;
+		}
+	
+		.torrentListSidebar .categoryList .count
+		{
+			color: {xen:property mutedTextColor};
+			float: right;
+			*float: none;
+			margin-left: 5px;
+		}
+	
+		.torrentListSidebar .categoryList .selected
+		{
+			font-weight: bold;
+		}
+	
+		.torrentListSidebar .categoryList ol ol
+		{
+			margin-left: 15px;
+		}
+		
+	.torrentListSidebar .xenForm.section {
+		margin: 0 0 10px 0;
+	}
+	
+	.torrentListSidebar .xenForm .textCtrl {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	
+	.torrentListSidebar .xenForm .ctrlUnit dt {
+		width: 0px;
+	}
+	
+	.torrentListSidebar .xenForm .ctrlUnit dd {
+		width: 100%;
+		padding-right: 0px;
+	}
+
+/* TorrentList Filter */
+
+.bubbleLinksList
+{
+	overflow: hidden;
+}
+
+.bubbleLinksList a
+{
+	float: left;
+	padding: 2px 4px;
+	margin-right: 2px;
+	border-radius: 3px;
+	text-decoration: none;
+}
+	
+	.bubbleLinksList a.active
+	{
+		background-color: {xen:property primaryLightish};
+		color: {xen:property primaryLightest};
+	}
+
+	.bubbleLinksList a:hover,
+	.bubbleLinksList a:active
+	{
+		background-color: {xen:property primaryMedium};
+		color: {xen:property primaryLighterStill};
+		text-decoration: none;
+	}
+
+/* Torrent List */
+
+.torrentList
+{
+	position: relative;
+	zoom: 1;
+}
+
+/** column style and width **/
+
+.torrentList .sectionHeaders,
+.torrentListItem
+{
+	display: table;
+	table-layout: fixed;
+	width: 100%;
+	word-wrap: normal;
+}
+
+	.torrentList .sectionHeaders dt,
+	.torrentList .sectionHeaders dd,
+	.torrentListItem .listBlock
+	{
+		display: table-cell;
+		vertical-align: middle;
+		text-align: center;
+	}
+	
+	.torrentList .sectionHeaders dt a,
+	.torrentList .sectionHeaders dd a {
+		padding: 5px;
+	}
+	
+		.torrentList .sectionHeaders .name,
+		.torrentListItem .name {
+			width: 55%;
+			text-align: left;
+			padding-left: 5px !important;
+		}
+		
+			.torrentListItem .name a,
+			.torrentList .sectionHeaders .name a {
+				padding: 0px;
+			}
+	
+.torrentList .sectionHeaders
+{	
+	{xen:property subHeading}
+		
+	padding: 0px;
+	font-size: 14px;
+	margin-top: 0px;
+}
+		
+	.torrentList .sectionHeaders dt span
+	{
+		display: none !important;
+	}
+		
+	.torrentList .sectionHeaders a
+	{
+		display: block;
+		color: {xen:property subHeading.color};
+		outline: none;
+	}
+	
+	.torrentList .sectionHeaders a:hover
+	{
+		text-decoration: none;
+	}
+			
+	.torrentList .sectionHeaders dd a[href]:hover
+	{
+		{xen:property subHeadingHover}
+	}
+
+	.torrentList .sectionHeaders a span
+	{
+		padding: 5px 0px 0px;
+		display: block;
+		vertical-align: top;
+		line-height: 20px;
+	}
+	
+	.torrentList .sectionHeaders .seeders i {
+		color: green;
+	}
+
+	.torrentList .sectionHeaders .leechers i {
+		color: red;
+	}
+	
+	.torrentList .torrentCategory
+	{
+		width: 106px;
+	}
+		
+		
+	/** IE <8 **/
+	.torrentList .sectionHeaders,
+	.torrentListItem                { *display: block; _vertical-align: bottom; }
+	.torrentList .sectionHeaders dt,
+	.torrentList .sectionHeaders dd,
+	.torrentListItem .listBlock     { *display: block; *float: left; }
+	.torrentListItem .listBlock     { _height: 52px; *min-height: 52px; } /* todo: should be calculation */
+	.torrentList .sectionHeaders dt,
+	.torrentList .sectionHeaders dd { *padding: 5px 0; }
+	.torrentList .sectionHeaders a,
+	.torrentList .sectionHeaders a span { *display: inline !important; *float: none !important; }
+	
+
+/* Torrent List Item */
+
+.torrentListItems {
+	border-right: 1px solid {xen:property primaryLighterStill};
+	border-left: 1px solid {xen:property primaryLighterStill};
+}
+
+.torrentListItem
+{
+	{xen:property primaryContent.background}
+	
+	{xen:property primaryContent.border}
+}
+
+.torrentListItem:hover {
+	{xen:property secondaryContent.background}
+}
+	
+	.torrentListItem .torrentCategory a {
+		padding: 5px;	
+		display: block;
+	}
+	
+	.torrentListItem .torrentCategory span
+	{
+		background: transparent url('{xen:property imagePath}/xenforo/gradients/form-button-white-25px.png') repeat-x top;
+		padding: 0px 6px;
+		margin: -1px 0;
+		border: 1px solid transparent;
+		border-radius: 4px;
+		display: inline-block;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+	
+	.torrentListItem .torrentCategory span.primary {
+		color: {xen:property primaryMedium};
+		background-color: {xen:property primaryLighterStill};
+		border-color: {xen:property primaryLighterStill};
+	}
+	
+	.torrentListItem .torrentCategory img {		
+		height: 50px;
+		display: block;
+		border-radius: 4px;
+		background-color: {xen:property contentBackground};
+		padding: 2px;
+		border: 1px solid {xen:property primaryLighter};
+		margin: 0px auto;
+	}
+	
+	.torrentListItem .titleText
+	{
+		padding: 5px 0;
+		overflow: hidden; 
+		zoom: 1;
+		position: relative;
+	}
+	
+	.torrentListItem .title
+	{
+		font-size: 11pt;
+		line-height: 18px;
+		
+		max-width: 100%;
+		word-wrap: break-word;
+	}
+	
+	.torrentListItem .secondRow
+	{
+		font-size: 11px;
+		clear: both;
+	}	
+	
+	.torrentListItem .seeders, .torrentListItem .up {
+		color: {xen:property seeders};
+	}
+	
+	.torrentListItem .leechers, .torrentListItem .down {
+		color: {xen:property leechers};
+	}
+	
+	.torrentListItem .useragent {
+		margin-left: 5px;
+	}
+	
+		.torrentListItem .useragent .icon {
+			font-size: 11px;
+		}
+		
+	.torrentListItem .download a {
+		display: inline-block;
+		height: 16px;
+		width: 16px;
+		line-height: 16px;
+	}
+
+	.torrentListItem .download .icon-magnet {
+		font-size: 16px;
+		color: #f51515;
+	}
+
+	.torrentListItem .download img {
+		width: 16px;
+		height: 16px;
+	}
+	
+	.torrentListItem .listBlock {
+		padding: 5px 0;
+	}
+	
+/* Member Torrent List */
+	
+#memberTorrentListBlock .torrentList 
+{
+	border: none;
+	padding: 10px 0px;
+}
+
+	#memberTorrentListBlock .torrentList .name {
+		width: 50%;
+	}
+
+	ul#memberTorrentListBlock li {
+		display: none;
+	}
+	
+	ul#memberTorrentListBlock li.active {
+		display: list-item;
+	}
+	
+		ul#memberTorrentListBlock .torrentListItems li {
+			display: table;
+		}
+	
+<xen:if is="{xen:property enableResponsive}">
+@media (max-width: 1100px)
+{
+	.Responsive .torrentList .comments,
+	.Responsive .torrentList .timespent {
+		display: none;
+	}
+}
+
+@media (max-width: 900px)
+{
+	.Responsive .torrentList .up, 
+	.Responsive .torrentList .down,
+	.Responsive .torrentList .snatched
+	{
+		display: none;
+	}
+	
+	.Responsive .torrentList .torrentCategory 
+	{
+		width: 80px;
+	}
+	
+	   	.Responsive .torrentListItem .torrentCategory span 
+	   	{
+			display: block;
+			text-overflow: ellipsis;
+			font-size: 11px;
+		}
+	
+	.Responsive .torrentListBlock
+	{
+		display: table;
+		table-layout: fixed;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.Responsive .torrentListBlock .torrentListSidebar
+	{
+		display: table-footer-group;
+		
+		float: none;
+		padding-right: 0;
+		border-right: none;
+		margin: 0 auto;
+		margin-top: 10px;
+	}
+
+	.Responsive .torrentListBlock .torrentListMain 
+	{
+		display: table-header-group;
+
+		margin-left: 0;
+		border-left: none;
+		border-bottom: 1px solid {xen:property primaryLighter};
+		padding-bottom: 10px;
+	}
+
+	.Responsive .torrentListBlock .torrentListSidebar > *
+	{
+		max-width: 240px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	.Responsive .torrentListBlock .torrentListSidebar > .section {
+		max-width: 260px;
+	}
+}
+	
+@media (max-width: 650px)
+{
+	.Responsive .torrentList .left,
+	.Responsive .torrentList .torrentCategory
+	{
+		display: none;
+	}
+}
+
+@media (max-width: 480px)
+{
+	.Responsive .torrentList .lastAnnounced,
+	.Responsive .torrentList .postedBy,
+	.Responsive .torrentList .leechers,
+	.Responsive .torrentList .freeleech {
+		display: none;
+	}
+	
+	.Responsive .torrentListBlock .torrentListItem {
+		padding-top: 3px;
+	}
+}
+
+@media (max-width: 350px)
+{
+	.Responsive .torrentList .seeders
+	{
+		display: none;
+	}
+	
+	.Responsive .torrentListBlock .torrentListSidebar > *,
+	.Responsive .torrentListBlock .torrentListSidebar > .section 
+	{
+		max-width: none;
+	}
+}	
+</xen:if>]]></template>
+    <template title="xentorrent_torrent_list_item" version_id="6" version_string="1.1"><![CDATA[<li id="torrent-{$torrent.torrent_id}" class="torrentListItem">
+	<xen:set var="$waitTime">{xen:helper waittime, $torrent.ctime, $visitor.wait_time}</xen:set>
+
+	<div class="listBlock torrentCategory">
+		<xen:if is="{$torrent.torrent_category_image}">
+			<a href="{xen:link torrents, '', 'category_id={$torrent.node_id}'}" title="{$torrent.node_title}">
+				<img src="{$xenOptions.xenTorrentCategoriesImagePath}{$torrent.torrent_category_image}" alt="{$torrent.node_title}" />
+			</a>	
+		<xen:else />
+			<a href="{xen:link torrents, '', 'category_id={$torrent.node_id}'}" title="{$torrent.node_title}">		
+				<span class="primary">{$torrent.node_title}</span>
+			</a>	
+		</xen:if>
+	</div>
+	
+	<div class="listBlock name">
+		<div class="titleText">
+			<h3 class="title">
+				<a href="{xen:link threads, $torrent}" class="PreviewTooltip" data-previewurl="{xen:link threads/preview, $torrent}">{xen:helper wrap, $torrent.title, 50}</a>
+				{xen:if {$torrent.freeleech}, '<span class="freeleech Tooltip" title="{xen:phrase freeleech_desc}">{xen:phrase freeleech}</span>', ''}
+			</h3>
+			<div class="secondRow">
+				<div class="postedBy muted">
+					<xen:datetime time="$torrent.ctime" /> {xen:phrase by} <xen:if is="{$torrent.anonymous}">{$torrent.username}<xen:else /><xen:username user="$torrent" class="author" /></xen:if>					
+					<xen:if is="{$waitTime}">
+						<span><i class="icon icon-clock dimmed Tooltip" title="{xen:phrase wait_time}"></i> {$waitTime}
+					</xen:if>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="listBlock download">
+		<a href="{xen:link attachments, {$torrent}}" title="{xen:phrase download}"><img src="styles/xentorrent/torrent.png" alt="{xen:phrase download}" /></a>
+		<xen:if is="{$torrent.magnetLink}">
+			<a href="{$torrent.magnetLink}" title="{xen:phrase download}"><i class="icon icon-magnet" style="font-size:16px;"></i></a>
+		</xen:if>
+	</div>
+	
+	<div class="listBlock comments">
+		{$torrent.reply_count}
+	</div>
+	
+	<div class="listBlock size">
+		{xen:number $torrent.size, size}
+	</div>
+	
+	<div class="listBlock snatched">
+		{$torrent.completed}
+	</div>
+	
+	<div class="listBlock seeders strong">
+		{$torrent.seeders}
+	</div>
+	
+	<div class="listBlock leechers strong">
+		{$torrent.leechers}
+	</div>
+</li>]]></template>
+  </templates>
+  <public_template_modifications>
+    <modification template="message" modification_key="message_torrents" description="Display Torrent Attachments" execution_order="11" enabled="1" action="str_replace">
+      <find><![CDATA[{xen:raw $messageContentAfterTemplate}]]></find>
+      <replace><![CDATA[$0
+<xen:if is="{$message.torrent}">
+    <xen:include template="xentorrent_post_attachment">
+        <xen:map from="$message.torrent" to="$torrent" />
+    </xen:include>
+</xen:if>]]></replace>
+    </modification>
+    <modification template="thread_list_item" modification_key="thread_list_item_freeleech" description="Threadbit Freeleech Link" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<xen:if is="{$thread.prefix_id}">]]></find>
+      <replace><![CDATA[<xen:if is="{$thread.t_freeleech}">
+    <span class="freeleech Tooltip" title="{xen:phrase freeleech_desc}">{xen:phrase freeleech}</span>
+</xen:if>
+$0]]></replace>
+    </modification>
+    <modification template="thread_list_item" modification_key="thread_list_item_torrent_stats" description="Threadbit Torrent Stats" execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#<div class="controls faint">(.*)</div>#sU]]></find>
+      <replace><![CDATA[$0
+<xen:include template="xentorrent_thread_list_item" />]]></replace>
+    </modification>
+    <modification template="forum_list" modification_key="tracker_stats_index" description="Display tracker stats on forums index page" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<!-- end block: forum_stats -->]]></find>
+      <replace><![CDATA[$0
+<xen:if is="{$xenOptions.xenTTStatsOnHome}"><xen:include template="xentorrent_sidebar_tracker_stats" /></xen:if>]]></replace>
+    </modification>
+    <modification template="member_card" modification_key="xentorrent_member_card" description="Add xentorrent member card stats" execution_order="10" enabled="1" action="preg_replace">
+      <find><![CDATA[#(<xen:hook name="member_card_stats".*)(</xen:hook>)#sU]]></find>
+      <replace><![CDATA[$1
+<xen:if is="{$user.downloaded} OR {$user.uploaded}">
+	<xen:set var="$user.ratio">{xen:if '{$user.downloaded} > 0', {xen:number {xen:calc '{$user.uploaded} / {$user.downloaded}'}, 2}, '-'}</xen:set>
+	<dt>{xen:phrase uploaded}:</dt> <dd>{xen:number $user.uploaded, size}</dd>
+	<dt>{xen:phrase downloaded}:</dt> <dd>{xen:number $user.downloaded, size}</dd>
+	<dt>{xen:phrase ratio}:</dt> <dd>{$user.ratio}</dd>
+</xen:if>
+$2]]></replace>
+    </modification>
+    <modification template="thread_create" modification_key="xentorrent_thread_create" description="Show announce url on thread create page" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[<xen:include template="title_prefix_edit">]]></find>
+      <replace><![CDATA[<xen:include template="xentorrent_thread_create" />
+
+$0]]></replace>
+    </modification>
+    <modification template="footer" modification_key="xentt_footer" description="" execution_order="10" enabled="1" action="str_replace">
+      <find><![CDATA[{xen:helper copyright}]]></find>
+      <replace><![CDATA[$0
+<div><a style="float:left;" href="http://www.xentt.net" class="concealed">Powered by XenTorrent Tracker 1.2</a></div>]]></replace>
+    </modification>
+  </public_template_modifications>
+  <bb_code_media_sites/>
+  <bb_codes/>
+</addon>
