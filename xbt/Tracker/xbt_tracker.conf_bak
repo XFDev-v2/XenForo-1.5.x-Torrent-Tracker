@@ -1,0 +1,5 @@
+mysql_host = localhost
+mysql_user = root		
+mysql_password = pwd
+mysql_database = xf
+mysql_table_prefix = xftt_
